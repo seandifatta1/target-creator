@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
+import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './InfiniteGrid.css';
 
 // Grid point component
@@ -36,11 +37,56 @@ const GridPoint: React.FC<{ position: [number, number, number]; onClick: () => v
   );
 };
 
+// Drag handler component
+const DragHandler: React.FC<{ gridSize: number; onSnapPointUpdate: (point: [number, number, number] | null) => void }> = ({ 
+  gridSize, 
+  onSnapPointUpdate 
+}) => {
+  const { camera, raycaster, pointer, gl } = useThree();
+  const { isDragging } = useDragTargetContext();
+
+  useFrame(() => {
+    if (!isDragging) {
+      onSnapPointUpdate(null);
+      return;
+    }
+
+    // Update raycaster with current pointer position
+    raycaster.setFromCamera(pointer, camera);
+
+    // Create a plane at y=0 (grid plane)
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersectPoint = new THREE.Vector3();
+    const intersects = raycaster.ray.intersectPlane(plane, intersectPoint);
+
+    if (!intersects) {
+      onSnapPointUpdate(null);
+      return;
+    }
+
+    // Calculate nearest grid point
+    const gridHalf = gridSize / 2;
+    const snapX = Math.round(intersectPoint.x);
+    const snapZ = Math.round(intersectPoint.z);
+    const snapY = 0;
+
+    // Check if point is within active zone
+    if (snapX >= -gridHalf && snapX <= gridHalf && snapZ >= -gridHalf && snapZ <= gridHalf) {
+      onSnapPointUpdate([snapX, snapY, snapZ]);
+    } else {
+      onSnapPointUpdate(null);
+    }
+  });
+
+  return null;
+};
+
 // Infinite grid system
 const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ coordinateSettings }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
-  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number] }>>([]);
+  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string }>>([]);
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
+  const { isDragging, dragData, snapPoint, updateSnapPoint, endDrag } = useDragTargetContext();
 
   const handleGridPointClick = useCallback((position: [number, number, number]) => {
     setSelectedGridPoint(position);
@@ -48,11 +94,37 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
     // Add a new object at this grid point
     const newObject = {
       id: `obj_${Date.now()}`,
-      position: position
+      position: position,
+      targetId: `target_${Date.now()}`,
+      targetLabel: 'Target'
     };
     
     setPlacedObjects(prev => [...prev, newObject]);
   }, []);
+
+  // Handle drop
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging) {
+        const result = endDrag();
+        if (result && result.snapPoint) {
+          // Place object at snapped grid point
+          const newObject = {
+            id: `obj_${Date.now()}`,
+            position: result.snapPoint,
+            targetId: result.dragData.id,
+            targetLabel: result.dragData.label
+          };
+          setPlacedObjects(prev => [...prev, newObject]);
+        }
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => window.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [isDragging, endDrag]);
 
   const generateGridPoints = () => {
     const points: Array<[number, number, number]> = [];
@@ -68,6 +140,9 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
 
   return (
     <>
+      {/* Drag handler */}
+      <DragHandler gridSize={gridSize} onSnapPointUpdate={updateSnapPoint} />
+
       {/* Coordinate Axes */}
       <CoordinateAxes 
         coordinateSystem={coordinateSettings.system}
@@ -99,6 +174,16 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
         />
       ))}
 
+      {/* Snap point indicator */}
+      {isDragging && snapPoint && (
+        <Sphere
+          position={snapPoint}
+          args={[0.4, 16, 16]}
+        >
+          <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
+        </Sphere>
+      )}
+
       {/* Placed objects */}
       {placedObjects.map((obj) => (
         <Sphere
@@ -118,6 +203,74 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
   );
 };
 
+// OrbitControls wrapper that disables controls while dragging
+const OrbitControlsWrapper: React.FC = () => {
+  const { isDragging } = useDragTargetContext();
+  
+  return (
+    <OrbitControls
+      enablePan={!isDragging}
+      enableZoom={!isDragging}
+      enableRotate={!isDragging}
+      minDistance={5}
+      maxDistance={100}
+      enableDamping={true}
+      dampingFactor={0.05}
+    />
+  );
+};
+
+// Tooltip component
+const DragTooltip: React.FC<{ 
+  snapPoint: [number, number, number] | null;
+  coordinateSettings: CoordinateSettings;
+}> = ({ snapPoint, coordinateSettings }) => {
+  const { isDragging, dragData } = useDragTargetContext();
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [isDragging]);
+
+  if (!isDragging || !snapPoint) return null;
+
+  const formatCoordinate = (coord: number) => {
+    return (coord * coordinateSettings.minUnit).toFixed(1);
+  };
+
+  return (
+    <div
+      className="drag-tooltip"
+      style={{
+        position: 'fixed',
+        left: `${mousePosition.x + 15}px`,
+        top: `${mousePosition.y + 15}px`,
+        pointerEvents: 'none',
+        zIndex: 1000,
+      }}
+    >
+      <div className="tooltip-content">
+        <div className="tooltip-header">{dragData?.label || 'Target'}</div>
+        <div className="tooltip-coords">
+          X: {formatCoordinate(snapPoint[0])}, 
+          Y: {formatCoordinate(snapPoint[1])}, 
+          Z: {formatCoordinate(snapPoint[2])}
+        </div>
+        <div className="tooltip-grid">
+          Grid: [{snapPoint[0]}, {snapPoint[1]}, {snapPoint[2]}]
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main infinite grid canvas component
 const InfiniteGridCanvas: React.FC = () => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([15, 15, 15]);
@@ -126,6 +279,7 @@ const InfiniteGridCanvas: React.FC = () => {
     system: 'Cartesian',
     minUnit: 0.1
   });
+  const { snapPoint } = useDragTargetContext();
 
   const handleSettingsChange = useCallback((newSettings: CoordinateSettings) => {
     setCoordinateSettings(newSettings);
@@ -172,16 +326,11 @@ const InfiniteGridCanvas: React.FC = () => {
         style={{ width: '100%', height: '100%' }}
       >
         <InfiniteGrid coordinateSettings={coordinateSettings} />
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={5}
-          maxDistance={100}
-          enableDamping={true}
-          dampingFactor={0.05}
-        />
+        <OrbitControlsWrapper />
       </Canvas>
+
+      {/* Drag Tooltip */}
+      <DragTooltip snapPoint={snapPoint} coordinateSettings={coordinateSettings} />
 
       {/* Settings Modal */}
       <SettingsModal

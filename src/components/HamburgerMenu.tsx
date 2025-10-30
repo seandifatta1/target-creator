@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
+import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './HamburgerMenu.css';
 
 export interface HamburgerMenuItem {
@@ -70,14 +71,7 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
         {hasChildren && isExpanded && (
           <div className="hamburger-item-children">
             {item.children!.map(child => (
-              <button
-                key={child.id}
-                className="hamburger-item-child"
-                onClick={child.onClick}
-              >
-                {child.icon && <span className="hamburger-item-icon">{child.icon}</span>}
-                <span className="hamburger-item-label">{child.label}</span>
-              </button>
+              <DraggableTargetItem key={child.id} item={child} />
             ))}
           </div>
         )}
@@ -104,6 +98,37 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
         )}
       </div>
     </aside>
+  );
+};
+
+// Draggable target item component
+const DraggableTargetItem: React.FC<{ item: HamburgerMenuItem }> = ({ item }) => {
+  const { startDrag, isDragging, dragData } = useDragTargetContext();
+  const itemIsDragging = isDragging && dragData?.id === item.id;
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    startDrag({
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+    });
+  };
+
+  return (
+    <button
+      className={`hamburger-item-child ${itemIsDragging ? 'dragging' : ''}`}
+      onClick={(e) => {
+        if (!itemIsDragging && item.onClick) {
+          item.onClick();
+        }
+      }}
+      onMouseDown={handleMouseDown}
+      draggable={false}
+    >
+      {item.icon && <span className="hamburger-item-icon">{item.icon}</span>}
+      <span className="hamburger-item-label">{item.label}</span>
+    </button>
   );
 };
 

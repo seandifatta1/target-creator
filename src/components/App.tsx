@@ -3,11 +3,13 @@ import { useState } from 'react';
 import Toolbar from './Toolbar';
 import HamburgerMenu, { HamburgerMenuItem } from './HamburgerMenu';
 import InfiniteGridCanvas from './InfiniteGrid';
+import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './App.css';
 
 const App: React.FC = () => {
   const [isLeftMenuOpen, setIsLeftMenuOpen] = useState(false);
   const [isRightMenuOpen, setIsRightMenuOpen] = useState(true); // Open by default
+  const { isDragging } = useDragTargetContext();
 
   const leftMenuItems: HamburgerMenuItem[] = [
     { id: 'scenes', label: 'Scenes', onClick: () => console.log('Scenes clicked') },
@@ -45,7 +47,7 @@ const App: React.FC = () => {
           header={<div className="menu-header">Target Creator</div>}
           footer={<div className="menu-footer">v1.0.0</div>}
         />
-        <div className={`app-content ${isLeftMenuOpen ? 'left-menu-open' : ''} ${isRightMenuOpen ? 'right-menu-open' : ''}`}>
+        <div className={`app-content ${isLeftMenuOpen ? 'left-menu-open' : ''} ${isRightMenuOpen ? 'right-menu-open' : ''} ${isDragging ? 'dragging' : ''}`}>
           <InfiniteGridCanvas />
         </div>
         <HamburgerMenu

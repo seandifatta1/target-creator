@@ -23,6 +23,11 @@
   position: relative;
 }
 
+/* Dragging cursor */
+.app-content.dragging {
+  cursor: grabbing;
+}
+
 /* Vertical divider that extends from toolbar down */
 .app-body::before {
   content: '';
