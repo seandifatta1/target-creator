@@ -1,0 +1,23 @@
+# .cursorrules
+
+# General behavior
+Cursor should:
+- Always use TypeScript instead of JavaScript.
+- Prefer React functional components with hooks.
+- Use Blueprint.js components and styling where relevant (use other libraries like three.js for canvas where relevant).
+- Follow ESLint and Prettier conventions.
+
+# File organization
+- Put hooks in /src/hooks
+- Put reusable UI in /src/components
+- Put utility functions in /src/utils
+
+# Naming
+- Hooks start with "use"
+- Components are PascalCase
+- Variables are camelCase
+
+# Modularity & Stories
+- Prioritize modularity via dependency injection (DI) for components and utilities.
+- Any new component should also include a colocated Storybook story.
+

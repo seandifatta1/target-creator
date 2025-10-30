@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
-import InfiniteGridCanvas from './components/InfiniteGrid';
+import App from './components/App';
 
-// Render the infinite grid app
+// Render the app
 const root = createRoot(
   document.getElementById('root') as HTMLElement
 );
 
 root.render(
   <React.StrictMode>
-    <InfiniteGridCanvas />
+    <App />
   </React.StrictMode>
 );
