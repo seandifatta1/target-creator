@@ -1,75 +1,14 @@
 import * as React from 'react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Box, Sphere, Text, Html } from '@react-three/drei';
+import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
+import Target from './Target';
+import Path from './Path';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './InfiniteGrid.css';
-
-// Annotation component for placed objects
-const TargetAnnotation: React.FC<{
-  position: [number, number, number];
-  label: string;
-  coordinateSettings: CoordinateSettings;
-  isOpen: boolean;
-  onClose: () => void;
-  onPointerOver: () => void;
-  onPointerOut: () => void;
-}> = ({ position, label, coordinateSettings, isOpen, onClose, onPointerOver, onPointerOut }) => {
-  if (!isOpen) return null;
-
-  const formatCoordinate = (coord: number) => {
-   
-
-
-
- return (coord * coordinateSettings.minUnit).toFixed(1);
-  };
-
-  // Position annotation above the target (1 unit up)
-  const annotationPosition: [number, number, number] = [position[0], position[1] + 1, position[2]];
-
-  return (
-    <Html
-      position={annotationPosition}
-      center
-      distanceFactor={10}
-      style={{ pointerEvents: 'auto' }}
-    >
-      <div 
-        className="target-annotation"
-        onMouseEnter={onPointerOver}
-        onMouseLeave={onPointerOut}
-      >
-        <div className="tooltip-content">
-          <div className="tooltip-header-row">
-            <div className="tooltip-header">{label}</div>
-            <button 
-              className="annotation-close"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              aria-label="Close annotation"
-            >
-              ×
-            </button>
-          </div>
-          <div className="tooltip-coords">
-            X: {formatCoordinate(position[0])}, 
-            Y: {formatCoordinate(position[1])}, 
-            Z: {formatCoordinate(position[2])}
-          </div>
-          <div className="tooltip-grid">
-            Grid: [{position[0]}, {position[1]}, {position[2]}]
-          </div>
-        </div>
-      </div>
-    </Html>
-  );
-};
 
 // Grid point component
 const GridPoint: React.FC<{ position: [number, number, number]; onClick: () => void }> = ({ position, onClick }) => {
@@ -101,15 +40,20 @@ const GridPoint: React.FC<{ position: [number, number, number]; onClick: () => v
 };
 
 // Drag handler component
-const DragHandler: React.FC<{ gridSize: number; onSnapPointUpdate: (point: [number, number, number] | null) => void }> = ({ 
+const DragHandler: React.FC<{ 
+  gridSize: number; 
+  onSnapPointUpdate: (point: [number, number, number] | null) => void;
+  alwaysTrack?: boolean;
+}> = ({ 
   gridSize, 
-  onSnapPointUpdate 
+  onSnapPointUpdate,
+  alwaysTrack = false
 }) => {
   const { camera, raycaster, pointer, gl } = useThree();
   const { isDragging } = useDragTargetContext();
 
   useFrame(() => {
-    if (!isDragging) {
+    if (!isDragging && !alwaysTrack) {
       onSnapPointUpdate(null);
       return;
     }
@@ -151,12 +95,20 @@ const InfiniteGrid: React.FC<{
   onPlacedObjectsChange: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>) => void;
   openAnnotations: Set<string>;
   onToggleAnnotation: (id: string) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, openAnnotations, onToggleAnnotation }) => {
+  waitingForPathEndpoint: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null;
+  onWaitingForPathEndpointChange: (state: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null) => void;
+  onPathEndpointSnapPointChange: (point: [number, number, number] | null) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
+  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; start: [number, number, number]; end: [number, number, number]; pathType: string; pathLabel: string }>>([]);
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
+  const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
   const { isDragging, dragData, snapPoint, updateSnapPoint, endDrag } = useDragTargetContext();
+
+  // Create a combined snap point that works for both dragging and path endpoint placement
+  const currentSnapPoint = isDragging ? snapPoint : (waitingForPathEndpoint ? pathEndpointSnapPoint : null);
 
   // Notify parent of changes
   useEffect(() => {
@@ -167,7 +119,55 @@ const InfiniteGrid: React.FC<{
     onHoveredObjectChange(hoveredObject);
   }, [hoveredObject, onHoveredObjectChange]);
 
+  // Clear path endpoint snap point when not waiting
+  useEffect(() => {
+    if (!waitingForPathEndpoint) {
+      setPathEndpointSnapPoint(null);
+      onPathEndpointSnapPointChange(null);
+    }
+  }, [waitingForPathEndpoint, onPathEndpointSnapPointChange]);
+
+  // Notify parent of path endpoint snap point changes
+  useEffect(() => {
+    onPathEndpointSnapPointChange(pathEndpointSnapPoint);
+  }, [pathEndpointSnapPoint, onPathEndpointSnapPointChange]);
+
+  // Handle Escape key to cancel path placement
+  useEffect(() => {
+    if (!waitingForPathEndpoint) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onWaitingForPathEndpointChange(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [waitingForPathEndpoint, onWaitingForPathEndpointChange]);
+
   const handleGridPointClick = useCallback((position: [number, number, number]) => {
+    // If waiting for path endpoint, update the existing path's endpoint
+    if (waitingForPathEndpoint) {
+      // Validate position and start point
+      if (position && position.length === 3 && 
+          waitingForPathEndpoint.start && 
+          waitingForPathEndpoint.start.length === 3) {
+        // Update the existing path's endpoint
+        setPlacedPaths(prev => prev.map(path => {
+          if (path.id === waitingForPathEndpoint.id) {
+            return {
+              ...path,
+              end: [position[0], position[1], position[2]] as [number, number, number]
+            };
+          }
+          return path;
+        }));
+      }
+      onWaitingForPathEndpointChange(null);
+      return;
+    }
+
     setSelectedGridPoint(position);
     
     // Add a new object at this grid point
@@ -179,7 +179,7 @@ const InfiniteGrid: React.FC<{
     };
     
     setPlacedObjects(prev => [...prev, newObject]);
-  }, []);
+  }, [waitingForPathEndpoint, onWaitingForPathEndpointChange]);
 
   // Handle drop
   useEffect(() => {
@@ -187,27 +187,65 @@ const InfiniteGrid: React.FC<{
       if (isDragging) {
         const result = endDrag();
         if (result && result.snapPoint) {
-          // Place object at snapped grid point
-          // Extract emoji from icon ReactNode
-          let iconEmoji = '🎯';
-          if (result.dragData.icon) {
-            const iconChildren = React.Children.toArray(result.dragData.icon);
-            const iconSpan = iconChildren.find((child: any) => 
-              typeof child === 'object' && child.props?.children
-            ) as any;
-            iconEmoji = iconSpan?.props?.children || '🎯';
+          // Check if this is a path item
+          if (result.dragData.id.startsWith('path-')) {
+            // For paths, immediately create a line with endpoint adjacent to start point
+            if (result.snapPoint && result.snapPoint.length === 3) {
+              const start: [number, number, number] = [
+                result.snapPoint[0], 
+                result.snapPoint[1], 
+                result.snapPoint[2]
+              ];
+              // Set endpoint to adjacent point (1 unit in +X direction)
+              const end: [number, number, number] = [
+                start[0] + 1,
+                start[1],
+                start[2]
+              ];
+              
+              // Create the path immediately
+              const newPath = {
+                id: `path_${Date.now()}`,
+                start: start,
+                end: end,
+                pathType: result.dragData.id,
+                pathLabel: result.dragData.label
+              };
+              
+              // Add path to state
+              setPlacedPaths((prev: Array<{ id: string; start: [number, number, number]; end: [number, number, number]; pathType: string; pathLabel: string }>) => [...prev, newPath]);
+              
+              // Then enter mode to allow user to adjust endpoint if desired
+              onWaitingForPathEndpointChange({
+                id: newPath.id,
+                start: start,
+                pathType: result.dragData.id,
+                pathLabel: result.dragData.label
+              });
+            }
+          } else {
+            // Place target object at snapped grid point
+            // Extract emoji from icon ReactNode
+            let iconEmoji = '🎯';
+            if (result.dragData.icon) {
+              const iconChildren = React.Children.toArray(result.dragData.icon);
+              const iconSpan = iconChildren.find((child: any) => 
+                typeof child === 'object' && child.props?.children
+              ) as any;
+              iconEmoji = iconSpan?.props?.children || '🎯';
+            }
+            
+            const newObject = {
+              id: `obj_${Date.now()}`,
+              position: result.snapPoint,
+              targetId: result.dragData.id,
+              targetLabel: result.dragData.label,
+              iconEmoji: iconEmoji
+            };
+            setPlacedObjects(prev => [...prev, newObject]);
+            // Open annotation for newly placed object
+            onToggleAnnotation(newObject.id);
           }
-          
-          const newObject = {
-            id: `obj_${Date.now()}`,
-            position: result.snapPoint,
-            targetId: result.dragData.id,
-            targetLabel: result.dragData.label,
-            iconEmoji: iconEmoji
-          };
-          setPlacedObjects(prev => [...prev, newObject]);
-          // Open annotation for newly placed object
-          onToggleAnnotation(newObject.id);
         }
       }
     };
@@ -216,7 +254,7 @@ const InfiniteGrid: React.FC<{
       window.addEventListener('mouseup', handleMouseUp);
       return () => window.removeEventListener('mouseup', handleMouseUp);
     }
-  }, [isDragging, endDrag]);
+  }, [isDragging, endDrag, onToggleAnnotation, onWaitingForPathEndpointChange]);
 
   const generateGridPoints = () => {
     const points: Array<[number, number, number]> = [];
@@ -233,7 +271,17 @@ const InfiniteGrid: React.FC<{
   return (
     <>
       {/* Drag handler */}
-      <DragHandler gridSize={gridSize} onSnapPointUpdate={updateSnapPoint} />
+      <DragHandler 
+        gridSize={gridSize} 
+        onSnapPointUpdate={(point) => {
+          if (isDragging) {
+            updateSnapPoint(point);
+          } else if (waitingForPathEndpoint) {
+            setPathEndpointSnapPoint(point);
+          }
+        }}
+        alwaysTrack={!!waitingForPathEndpoint}
+      />
 
       {/* Coordinate Axes */}
       <CoordinateAxes 
@@ -267,58 +315,82 @@ const InfiniteGrid: React.FC<{
       ))}
 
       {/* Snap point indicator */}
-      {isDragging && snapPoint && (
+      {currentSnapPoint && (
         <Sphere
-          position={snapPoint}
+          position={currentSnapPoint}
           args={[0.4, 16, 16]}
         >
           <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
         </Sphere>
       )}
 
+      {/* Temporary path line preview while waiting for endpoint */}
+      {waitingForPathEndpoint && 
+       waitingForPathEndpoint.start && 
+       waitingForPathEndpoint.start.length === 3 && (() => {
+        // Use existing path's end if available, otherwise use snap point
+        const existingPath = placedPaths.find(p => p.id === waitingForPathEndpoint.id);
+        const previewEnd = existingPath?.end || pathEndpointSnapPoint;
+        
+        if (!previewEnd || previewEnd.length !== 3) return null;
+        
+        return (
+          <Line
+            points={[
+              new THREE.Vector3(
+                waitingForPathEndpoint.start[0],
+                waitingForPathEndpoint.start[1],
+                waitingForPathEndpoint.start[2]
+              ),
+              new THREE.Vector3(
+                previewEnd[0],
+                previewEnd[1],
+                previewEnd[2]
+              )
+            ]}
+            color="#00ff00"
+            lineWidth={2}
+          />
+        );
+      })()}
+
+      {/* Placed paths */}
+      {placedPaths.map((path) => (
+        <Path
+          key={path.id}
+          id={path.id}
+          start={path.start}
+          end={path.end}
+          pathType={path.pathType}
+          pathLabel={path.pathLabel}
+          color="#3498db"
+          lineWidth={3}
+        />
+      ))}
+
       {/* Placed objects */}
       {placedObjects.map((obj) => {
-        // Position icon slightly above the grid point (0.5 units up)
-        const iconPosition: [number, number, number] = [obj.position[0], obj.position[1] + 0.5, obj.position[2]];
-        const iconEmoji = obj.iconEmoji || '🎯';
         const annotationIsOpen = openAnnotations.has(obj.id);
         
         return (
-          <group key={obj.id}>
-            {/* Icon text that always faces the camera */}
-            <Text
-              position={iconPosition}
-              fontSize={0.8}
-              color="#ffffff"
-              anchorX="center"
-              anchorY="middle"
-              onPointerOver={() => {
-                // Only set hovered if annotation is closed
-                if (!annotationIsOpen) {
-                  setHoveredObject(obj.id);
-                }
-              }}
-              onPointerOut={() => setHoveredObject(null)}
-            >
-              {iconEmoji}
-            </Text>
-            
-            {/* Persistent annotation */}
-            <TargetAnnotation
-              position={obj.position}
-              label={obj.targetLabel}
-              coordinateSettings={coordinateSettings}
-              isOpen={annotationIsOpen}
-              onClose={() => onToggleAnnotation(obj.id)}
-              onPointerOver={() => {
-                // Suppress hover tooltip when annotation is hovered
-                if (annotationIsOpen) {
-                  setHoveredObject(null);
-                }
-              }}
-              onPointerOut={() => {}}
-            />
-          </group>
+          <Target
+            key={obj.id}
+            id={obj.id}
+            position={obj.position}
+            targetId={obj.targetId}
+            targetLabel={obj.targetLabel}
+            iconEmoji={obj.iconEmoji}
+            coordinateSettings={coordinateSettings}
+            isAnnotationOpen={annotationIsOpen}
+            onToggleAnnotation={onToggleAnnotation}
+            onPointerOver={() => {
+              // Only set hovered if annotation is closed
+              if (!annotationIsOpen) {
+                setHoveredObject(obj.id);
+              }
+            }}
+            onPointerOut={() => setHoveredObject(null)}
+          />
         );
       })}
 
@@ -330,15 +402,16 @@ const InfiniteGrid: React.FC<{
   );
 };
 
-// OrbitControls wrapper that disables controls while dragging
-const OrbitControlsWrapper: React.FC = () => {
+// OrbitControls wrapper that disables controls while dragging or placing path
+const OrbitControlsWrapper: React.FC<{ waitingForPathEndpoint: boolean }> = ({ waitingForPathEndpoint }) => {
   const { isDragging } = useDragTargetContext();
+  const shouldDisable = isDragging || waitingForPathEndpoint;
   
   return (
     <OrbitControls
-      enablePan={!isDragging}
-      enableZoom={!isDragging}
-      enableRotate={!isDragging}
+      enablePan={!shouldDisable}
+      enableZoom={!shouldDisable}
+      enableRotate={!shouldDisable}
       minDistance={5}
       maxDistance={100}
       enableDamping={true}
@@ -354,7 +427,8 @@ const DragTooltip: React.FC<{
   hoveredObject: string | null;
   placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
   openAnnotations: Set<string>;
-}> = ({ snapPoint, coordinateSettings, hoveredObject, placedObjects, openAnnotations }) => {
+  waitingForPathEndpoint: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null;
+}> = ({ snapPoint, coordinateSettings, hoveredObject, placedObjects, openAnnotations, waitingForPathEndpoint }) => {
   const { isDragging, dragData } = useDragTargetContext();
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -363,14 +437,16 @@ const DragTooltip: React.FC<{
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
-    if (isDragging || hoveredObject) {
+    if (isDragging || hoveredObject || waitingForPathEndpoint) {
       window.addEventListener('mousemove', handleMouseMove);
       return () => window.removeEventListener('mousemove', handleMouseMove);
     }
-  }, [isDragging, hoveredObject]);
+  }, [isDragging, hoveredObject, waitingForPathEndpoint]);
 
-  // Show tooltip for dragged item or hovered placed object (only if annotation is closed)
-  const tooltipData = isDragging && snapPoint
+  // Show tooltip for dragged item, path endpoint, or hovered placed object
+  const tooltipData = waitingForPathEndpoint && snapPoint
+    ? { label: waitingForPathEndpoint.pathLabel, position: snapPoint }
+    : isDragging && snapPoint
     ? { label: dragData?.label || 'Target', position: snapPoint }
     : hoveredObject && !openAnnotations.has(hoveredObject)
     ? (() => {
@@ -422,6 +498,8 @@ const InfiniteGridCanvas: React.FC = () => {
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
   const [openAnnotations, setOpenAnnotations] = useState<Set<string>>(new Set());
+  const [waitingForPathEndpoint, setWaitingForPathEndpoint] = useState<{ id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null>(null);
+  const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
   const { snapPoint } = useDragTargetContext();
 
   const handleToggleAnnotation = useCallback((id: string) => {
@@ -461,6 +539,11 @@ const InfiniteGridCanvas: React.FC = () => {
           <p><strong>Min Unit:</strong> {coordinateSettings.minUnit} {coordinateSettings.system === 'Spherical' ? '°' : 'km'}</p>
         </div>
         <p>Click on blue grid points to place objects</p>
+        {waitingForPathEndpoint && (
+          <p style={{ color: '#00ff00', fontWeight: 'bold' }}>
+            Click on a grid point to set path endpoint
+          </p>
+        )}
         <p>Use mouse to orbit, zoom, and pan</p>
         <div className="control-buttons">
           <button onClick={() => setCameraPosition([15, 15, 15])}>
@@ -486,17 +569,21 @@ const InfiniteGridCanvas: React.FC = () => {
           onPlacedObjectsChange={setPlacedObjects}
           openAnnotations={openAnnotations}
           onToggleAnnotation={handleToggleAnnotation}
+          waitingForPathEndpoint={waitingForPathEndpoint}
+          onWaitingForPathEndpointChange={setWaitingForPathEndpoint}
+          onPathEndpointSnapPointChange={setPathEndpointSnapPoint}
         />
-        <OrbitControlsWrapper />
+        <OrbitControlsWrapper waitingForPathEndpoint={!!waitingForPathEndpoint} />
       </Canvas>
 
       {/* Drag Tooltip */}
       <DragTooltip 
-        snapPoint={snapPoint}
+        snapPoint={waitingForPathEndpoint ? pathEndpointSnapPoint : snapPoint}
         coordinateSettings={coordinateSettings}
         hoveredObject={hoveredObject}
         placedObjects={placedObjects}
         openAnnotations={openAnnotations}
+        waitingForPathEndpoint={waitingForPathEndpoint}
       />
 
       {/* Settings Modal */}

@@ -29,6 +29,13 @@ const App: React.FC = () => {
         { id: 'target-5', label: 'Target 5', icon: <span>🎯</span>, onClick: () => console.log('Target 5 clicked') },
       ],
     },
+    {
+      id: 'path-browser',
+      label: 'Path browser',
+      children: [
+        { id: 'path-line', label: 'Line', icon: <span>📏</span>, onClick: () => console.log('Line clicked') },
+      ],
+    },
   ];
 
   return (
@@ -55,7 +62,7 @@ const App: React.FC = () => {
           position="right"
           onToggle={() => setIsRightMenuOpen(!isRightMenuOpen)}
           items={rightMenuItems}
-          initiallyExpanded={['target-browser']}
+          initiallyExpanded={['target-browser', 'path-browser']}
         />
       </div>
     </div>
