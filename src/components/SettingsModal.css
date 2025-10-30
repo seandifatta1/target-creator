@@ -1,0 +1,257 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid #4a5568;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #4a5568;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.setting-group {
+  margin-bottom: 24px;
+}
+
+.setting-label {
+  display: block;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.unit-label {
+  font-weight: normal;
+  color: #a0aec0;
+  margin-left: 8px;
+}
+
+.coordinate-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.coordinate-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.coordinate-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #4a5568;
+}
+
+.coordinate-option input[type="radio"] {
+  margin-right: 12px;
+  margin-top: 2px;
+  accent-color: #3498db;
+}
+
+.coordinate-option input[type="radio"]:checked + .option-label {
+  color: #3498db;
+}
+
+.option-label {
+  flex: 1;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.option-label strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.option-description {
+  color: #a0aec0;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.unit-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unit-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e2e8f0;
+  font-size: 14px;
+  width: 80px;
+  transition: border-color 0.2s;
+}
+
+.unit-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.unit-suffix {
+  color: #a0aec0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.unit-description {
+  color: #a0aec0;
+  font-size: 12px;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.coordinate-info {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.coordinate-info h3 {
+  margin: 0 0 12px 0;
+  color: #3498db;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.system-details {
+  color: #e2e8f0;
+}
+
+.system-details p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.system-details ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.system-details li {
+  margin-bottom: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #4a5568;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 12px 12px;
+}
+
+.cancel-button,
+.save-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.cancel-button {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+
+.cancel-button:hover {
+  background: #5a6578;
+}
+
+.save-button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+}
+
+.save-button:hover {
+  background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
+  transform: translateY(-1px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 16px;
+  }
+  
+  .coordinate-option {
+    padding: 12px;
+  }
+}
+
