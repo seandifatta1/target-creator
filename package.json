@@ -7,6 +7,8 @@
     "build": "tsc",
     "build:renderer": "webpack --config webpack.config.js",
     "start": "npm run build && npm run build:renderer && electron .",
+    "dev": "webpack serve --config webpack.config.js --port 6007",
+    "dev:electron": "cross-env ELECTRON_START_URL=http://localhost:6007 concurrently -k \"webpack serve --config webpack.config.js --port 6007\" \"wait-on http://localhost:6007 && electron .\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -26,7 +28,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "webpack": "^5.102.1",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^4.15.2",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0",
+    "cross-env": "^7.0.3"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
