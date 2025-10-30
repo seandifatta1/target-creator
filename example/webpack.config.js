@@ -2,15 +2,15 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  mode: 'development',
   entry: './src/renderer.tsx',
-  target: 'web',
+  target: 'web', // Always web for browser compatibility
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: [/node_modules/, /\.stories\.tsx?$/, /src\/stories\//],
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,
@@ -24,13 +24,12 @@ module.exports = {
   output: {
     filename: 'renderer.js',
     path: path.resolve(__dirname, 'dist'),
-    clean: true,
   },
   devServer: {
     static: {
       directory: path.join(__dirname, 'dist'),
     },
-    port: 6007,
+    port: 3000,
     hot: true,
     historyApiFallback: true,
     client: {

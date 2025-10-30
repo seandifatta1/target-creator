@@ -3,24 +3,20 @@ import * as path from 'path';
 
 function createWindow(): void {
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 800,
+    height: 600,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
 
-  const startUrl = process.env.ELECTRON_START_URL;
-  if (startUrl) {
-    win.loadURL(startUrl);
+  // Always load from dev server in development, file in production
+  if (process.env.NODE_ENV === 'development') {
+    win.loadURL('http://localhost:3000');
   } else {
-    // Load the HTML file from the dist directory (where Webpack outputs it)
     win.loadFile(path.join(__dirname, 'index.html'));
   }
-  
-  // Open DevTools for debugging (commented out to prevent auto-opening)
-  // win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);

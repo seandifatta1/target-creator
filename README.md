@@ -1,39 +1,49 @@
 # Target Creator
 
-A basic TypeScript Electron application.
+A browser-based 3D visualization application built with TypeScript, React, and Three.js.
 
 ## What's Included
 
-- **TypeScript Electron App** - Basic desktop application with TypeScript support
-- **Simple UI** - "Hello World!" HTML interface
-- **Build System** - TypeScript compilation with `tsc`
-- **Development Setup** - All necessary dependencies and configurations
+- **React Application** - Modern React app with TypeScript support
+- **3D Canvas** - Interactive 3D grid visualization using Three.js and react-three-fiber
+- **Component Library** - Reusable UI components with Storybook integration
+- **Build System** - Webpack-based bundling with hot module replacement
+- **Development Setup** - Hot reload development server on port 6007
 
 ## Project Structure
 
 ```
 target-creator/
 ├── src/
-│   └── main.ts          # TypeScript main process
-├── dist/
-│   └── main.js          # Compiled JavaScript (generated)
-├── index.html           # Simple HTML interface
+│   ├── components/      # React components (PascalCase)
+│   ├── hooks/           # Custom React hooks (use*)
+│   ├── utils/           # Utility functions (camelCase)
+│   └── renderer.tsx     # Application entry point
+├── dist/                # Build output (generated)
+├── index.html           # HTML template
 ├── package.json         # Project configuration
 ├── tsconfig.json        # TypeScript configuration
+├── webpack.config.js    # Webpack bundling configuration
 └── README.md           # This file
 ```
 
 ## Dependencies
 
-- **electron** - Desktop app framework
+- **react** - React UI library
+- **react-dom** - React DOM renderer
+- **three** - 3D graphics library
+- **@react-three/fiber** - React renderer for Three.js
+- **@react-three/drei** - Useful helpers for react-three-fiber
 - **typescript** - TypeScript compiler
-- **@types/electron** - TypeScript definitions for Electron
-- **@types/node** - TypeScript definitions for Node.js
+- **webpack** - Module bundler
+- **storybook** - Component development environment
 
 ## Scripts
 
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm start` - Build and run the Electron app
+- `npm run dev` - Start development server on port 6007
+- `npm run build` - Build production bundle
+- `npm run storybook` - Start Storybook on port 6006
+- `npm run build-storybook` - Build static Storybook site
 
 ## Getting Started
 
@@ -42,17 +52,21 @@ target-creator/
    npm install
    ```
 
-2. Run the application:
+2. Start the development server:
    ```bash
-   npm start
+   npm run dev
    ```
+
+3. Open your browser to `http://localhost:6007`
 
 ## Features
 
 - ✅ TypeScript compilation
-- ✅ Electron window creation
-- ✅ Basic HTML interface
-- ✅ Proper build pipeline
+- ✅ React component architecture
+- ✅ 3D interactive canvas
+- ✅ Hot module replacement
+- ✅ Storybook integration
+- ✅ Modern build pipeline
 - ✅ Type safety throughout
 
-This is the foundation for building a more complex desktop application with TypeScript and Electron.
+This application provides a foundation for 3D visualization and interaction in the browser.

@@ -1,14 +1,9 @@
 {
   "name": "target-creator",
   "version": "1.0.0",
-  "main": "dist/main.js",
-  "type": "commonjs",
   "scripts": {
-    "build": "tsc",
-    "build:renderer": "webpack --config webpack.config.js",
-    "start": "npm run build && npm run build:renderer && electron .",
+    "build": "webpack --config webpack.config.js --mode production",
     "dev": "webpack serve --config webpack.config.js --port 6007",
-    "dev:electron": "cross-env ELECTRON_START_URL=http://localhost:6007 concurrently -k \"webpack serve --config webpack.config.js --port 6007\" \"wait-on http://localhost:6007 && electron .\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -17,22 +12,16 @@
     "@storybook/addon-onboarding": "^10.0.1",
     "@storybook/addon-webpack5-compiler-swc": "^4.0.1",
     "@storybook/react-webpack5": "^10.0.1",
-    "@types/electron": "^1.4.38",
     "@types/node": "^24.9.2",
     "css-loader": "^7.1.2",
-    "electron": "^39.0.0",
     "html-webpack-plugin": "^5.6.4",
     "storybook": "^10.0.1",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^4.15.2",
-    "concurrently": "^8.2.2",
-    "wait-on": "^7.2.0",
-    "cross-env": "^7.0.3"
+    "webpack-dev-server": "^4.15.2"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",

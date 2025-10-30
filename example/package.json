@@ -1,0 +1,32 @@
+{
+  "name": "basic-electron-react",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "build:renderer": "webpack --config webpack.config.js",
+    "start": "npm run build && npm run build:renderer && electron .",
+    "dev": "webpack serve --config webpack.config.js --port 3000",
+    "electron": "cross-env NODE_ENV=development electron .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.6.4",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^4.15.2"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
