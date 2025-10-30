@@ -36,8 +36,25 @@
   transition: left 0.25s ease;
 }
 
-.app-body:has(.app-content.menu-open)::before {
+.app-body:has(.app-content.left-menu-open)::before {
   left: 280px; /* Move to expanded menu width */
+}
+
+/* Vertical divider on the right side */
+.app-body::after {
+  content: '';
+  position: absolute;
+  right: 60px; /* Start at collapsed menu width */
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #23272a;
+  z-index: 5;
+  transition: right 0.25s ease;
+}
+
+.app-body:has(.app-content.right-menu-open)::after {
+  right: 280px; /* Move to expanded menu width */
 }
 
 .menu-header {
