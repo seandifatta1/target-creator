@@ -1,12 +1,75 @@
 import * as React from 'react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Box, Sphere } from '@react-three/drei';
+import { OrbitControls, Grid, Box, Sphere, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './InfiniteGrid.css';
+
+// Annotation component for placed objects
+const TargetAnnotation: React.FC<{
+  position: [number, number, number];
+  label: string;
+  coordinateSettings: CoordinateSettings;
+  isOpen: boolean;
+  onClose: () => void;
+  onPointerOver: () => void;
+  onPointerOut: () => void;
+}> = ({ position, label, coordinateSettings, isOpen, onClose, onPointerOver, onPointerOut }) => {
+  if (!isOpen) return null;
+
+  const formatCoordinate = (coord: number) => {
+   
+
+
+
+ return (coord * coordinateSettings.minUnit).toFixed(1);
+  };
+
+  // Position annotation above the target (1 unit up)
+  const annotationPosition: [number, number, number] = [position[0], position[1] + 1, position[2]];
+
+  return (
+    <Html
+      position={annotationPosition}
+      center
+      distanceFactor={10}
+      style={{ pointerEvents: 'auto' }}
+    >
+      <div 
+        className="target-annotation"
+        onMouseEnter={onPointerOver}
+        onMouseLeave={onPointerOut}
+      >
+        <div className="tooltip-content">
+          <div className="tooltip-header-row">
+            <div className="tooltip-header">{label}</div>
+            <button 
+              className="annotation-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              aria-label="Close annotation"
+            >
+              ×
+            </button>
+          </div>
+          <div className="tooltip-coords">
+            X: {formatCoordinate(position[0])}, 
+            Y: {formatCoordinate(position[1])}, 
+            Z: {formatCoordinate(position[2])}
+          </div>
+          <div className="tooltip-grid">
+            Grid: [{position[0]}, {position[1]}, {position[2]}]
+          </div>
+        </div>
+      </div>
+    </Html>
+  );
+};
 
 // Grid point component
 const GridPoint: React.FC<{ position: [number, number, number]; onClick: () => void }> = ({ position, onClick }) => {
@@ -82,11 +145,27 @@ const DragHandler: React.FC<{ gridSize: number; onSnapPointUpdate: (point: [numb
 };
 
 // Infinite grid system
-const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ coordinateSettings }) => {
+const InfiniteGrid: React.FC<{ 
+  coordinateSettings: CoordinateSettings;
+  onHoveredObjectChange: (id: string | null) => void;
+  onPlacedObjectsChange: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>) => void;
+  openAnnotations: Set<string>;
+  onToggleAnnotation: (id: string) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, openAnnotations, onToggleAnnotation }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
-  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string }>>([]);
+  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
+  const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const { isDragging, dragData, snapPoint, updateSnapPoint, endDrag } = useDragTargetContext();
+
+  // Notify parent of changes
+  useEffect(() => {
+    onPlacedObjectsChange(placedObjects);
+  }, [placedObjects, onPlacedObjectsChange]);
+
+  useEffect(() => {
+    onHoveredObjectChange(hoveredObject);
+  }, [hoveredObject, onHoveredObjectChange]);
 
   const handleGridPointClick = useCallback((position: [number, number, number]) => {
     setSelectedGridPoint(position);
@@ -109,13 +188,26 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
         const result = endDrag();
         if (result && result.snapPoint) {
           // Place object at snapped grid point
+          // Extract emoji from icon ReactNode
+          let iconEmoji = '🎯';
+          if (result.dragData.icon) {
+            const iconChildren = React.Children.toArray(result.dragData.icon);
+            const iconSpan = iconChildren.find((child: any) => 
+              typeof child === 'object' && child.props?.children
+            ) as any;
+            iconEmoji = iconSpan?.props?.children || '🎯';
+          }
+          
           const newObject = {
             id: `obj_${Date.now()}`,
             position: result.snapPoint,
             targetId: result.dragData.id,
-            targetLabel: result.dragData.label
+            targetLabel: result.dragData.label,
+            iconEmoji: iconEmoji
           };
           setPlacedObjects(prev => [...prev, newObject]);
+          // Open annotation for newly placed object
+          onToggleAnnotation(newObject.id);
         }
       }
     };
@@ -185,15 +277,50 @@ const InfiniteGrid: React.FC<{ coordinateSettings: CoordinateSettings }> = ({ co
       )}
 
       {/* Placed objects */}
-      {placedObjects.map((obj) => (
-        <Sphere
-          key={obj.id}
-          position={obj.position}
-          args={[0.3, 16, 16]}
-        >
-          <meshStandardMaterial color="#ff6b6b" />
-        </Sphere>
-      ))}
+      {placedObjects.map((obj) => {
+        // Position icon slightly above the grid point (0.5 units up)
+        const iconPosition: [number, number, number] = [obj.position[0], obj.position[1] + 0.5, obj.position[2]];
+        const iconEmoji = obj.iconEmoji || '🎯';
+        const annotationIsOpen = openAnnotations.has(obj.id);
+        
+        return (
+          <group key={obj.id}>
+            {/* Icon text that always faces the camera */}
+            <Text
+              position={iconPosition}
+              fontSize={0.8}
+              color="#ffffff"
+              anchorX="center"
+              anchorY="middle"
+              onPointerOver={() => {
+                // Only set hovered if annotation is closed
+                if (!annotationIsOpen) {
+                  setHoveredObject(obj.id);
+                }
+              }}
+              onPointerOut={() => setHoveredObject(null)}
+            >
+              {iconEmoji}
+            </Text>
+            
+            {/* Persistent annotation */}
+            <TargetAnnotation
+              position={obj.position}
+              label={obj.targetLabel}
+              coordinateSettings={coordinateSettings}
+              isOpen={annotationIsOpen}
+              onClose={() => onToggleAnnotation(obj.id)}
+              onPointerOver={() => {
+                // Suppress hover tooltip when annotation is hovered
+                if (annotationIsOpen) {
+                  setHoveredObject(null);
+                }
+              }}
+              onPointerOut={() => {}}
+            />
+          </group>
+        );
+      })}
 
       {/* Lighting */}
       <ambientLight intensity={0.4} />
@@ -224,22 +351,35 @@ const OrbitControlsWrapper: React.FC = () => {
 const DragTooltip: React.FC<{ 
   snapPoint: [number, number, number] | null;
   coordinateSettings: CoordinateSettings;
-}> = ({ snapPoint, coordinateSettings }) => {
+  hoveredObject: string | null;
+  placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
+  openAnnotations: Set<string>;
+}> = ({ snapPoint, coordinateSettings, hoveredObject, placedObjects, openAnnotations }) => {
   const { isDragging, dragData } = useDragTargetContext();
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (!isDragging) return;
-
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isDragging]);
+    if (isDragging || hoveredObject) {
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, [isDragging, hoveredObject]);
 
-  if (!isDragging || !snapPoint) return null;
+  // Show tooltip for dragged item or hovered placed object (only if annotation is closed)
+  const tooltipData = isDragging && snapPoint
+    ? { label: dragData?.label || 'Target', position: snapPoint }
+    : hoveredObject && !openAnnotations.has(hoveredObject)
+    ? (() => {
+        const obj = placedObjects.find(o => o.id === hoveredObject);
+        return obj ? { label: obj.targetLabel, position: obj.position } : null;
+      })()
+    : null;
+
+  if (!tooltipData) return null;
 
   const formatCoordinate = (coord: number) => {
     return (coord * coordinateSettings.minUnit).toFixed(1);
@@ -257,14 +397,14 @@ const DragTooltip: React.FC<{
       }}
     >
       <div className="tooltip-content">
-        <div className="tooltip-header">{dragData?.label || 'Target'}</div>
+        <div className="tooltip-header">{tooltipData.label}</div>
         <div className="tooltip-coords">
-          X: {formatCoordinate(snapPoint[0])}, 
-          Y: {formatCoordinate(snapPoint[1])}, 
-          Z: {formatCoordinate(snapPoint[2])}
+          X: {formatCoordinate(tooltipData.position[0])}, 
+          Y: {formatCoordinate(tooltipData.position[1])}, 
+          Z: {formatCoordinate(tooltipData.position[2])}
         </div>
         <div className="tooltip-grid">
-          Grid: [{snapPoint[0]}, {snapPoint[1]}, {snapPoint[2]}]
+          Grid: [{tooltipData.position[0]}, {tooltipData.position[1]}, {tooltipData.position[2]}]
         </div>
       </div>
     </div>
@@ -279,7 +419,22 @@ const InfiniteGridCanvas: React.FC = () => {
     system: 'Cartesian',
     minUnit: 0.1
   });
+  const [hoveredObject, setHoveredObject] = useState<string | null>(null);
+  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
+  const [openAnnotations, setOpenAnnotations] = useState<Set<string>>(new Set());
   const { snapPoint } = useDragTargetContext();
+
+  const handleToggleAnnotation = useCallback((id: string) => {
+    setOpenAnnotations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
 
   const handleSettingsChange = useCallback((newSettings: CoordinateSettings) => {
     setCoordinateSettings(newSettings);
@@ -325,12 +480,24 @@ const InfiniteGridCanvas: React.FC = () => {
         camera={{ position: cameraPosition, fov: 75 }}
         style={{ width: '100%', height: '100%' }}
       >
-        <InfiniteGrid coordinateSettings={coordinateSettings} />
+        <InfiniteGrid 
+          coordinateSettings={coordinateSettings}
+          onHoveredObjectChange={setHoveredObject}
+          onPlacedObjectsChange={setPlacedObjects}
+          openAnnotations={openAnnotations}
+          onToggleAnnotation={handleToggleAnnotation}
+        />
         <OrbitControlsWrapper />
       </Canvas>
 
       {/* Drag Tooltip */}
-      <DragTooltip snapPoint={snapPoint} coordinateSettings={coordinateSettings} />
+      <DragTooltip 
+        snapPoint={snapPoint}
+        coordinateSettings={coordinateSettings}
+        hoveredObject={hoveredObject}
+        placedObjects={placedObjects}
+        openAnnotations={openAnnotations}
+      />
 
       {/* Settings Modal */}
       <SettingsModal

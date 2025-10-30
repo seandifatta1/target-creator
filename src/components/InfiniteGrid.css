@@ -128,6 +128,40 @@
   font-family: 'Courier New', monospace;
 }
 
+/* Target annotation styles */
+.target-annotation {
+  pointer-events: auto;
+}
+
+.tooltip-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.annotation-close {
+  background: transparent;
+  border: none;
+  color: #dcddde;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.annotation-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .grid-controls {
