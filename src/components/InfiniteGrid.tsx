@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { Button, Icon } from '@blueprintjs/core';
+import { Button, Icon, Collapse } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
@@ -526,6 +526,7 @@ interface InfiniteGridCanvasProps {
 const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, onSelectItem }) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([15, 15, 15]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isControlsExpanded, setIsControlsExpanded] = useState(false); // Default to collapsed
   const [coordinateSettings, setCoordinateSettings] = useState<CoordinateSettings>({
     system: 'Cartesian',
     minUnit: 0.1
@@ -578,27 +579,41 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
       />
 
       {/* Controls overlay */}
-      <div className="grid-controls">
-        <h3>Infinite 3D Grid</h3>
-        <div className="coordinate-info">
-          <p><strong>System:</strong> {getCoordinateSystemLabel()}</p>
-          <p><strong>Min Unit:</strong> {coordinateSettings.minUnit} {coordinateSettings.system === 'Spherical' ? '°' : 'km'}</p>
+      <div className={`grid-controls ${!isControlsExpanded ? 'collapsed' : ''}`}>
+        <div className="grid-controls-header">
+          <h3>Infinite 3D Grid</h3>
+          <Button
+            className="controls-toggle"
+            onClick={() => setIsControlsExpanded(!isControlsExpanded)}
+            icon={<Icon icon={isControlsExpanded ? IconNames.CHEVRON_UP : IconNames.CHEVRON_DOWN} />}
+            minimal
+            small
+            aria-label={isControlsExpanded ? 'Collapse' : 'Expand'}
+          />
         </div>
-        <p>Click on blue grid points to place objects</p>
-        {waitingForPathEndpoint && (
-          <p style={{ color: '#00ff00', fontWeight: 'bold' }}>
-            Click on a grid point to set path endpoint
-          </p>
-        )}
-        <p>Use mouse to orbit, zoom, and pan</p>
-        <div className="control-buttons">
-          <Button 
-            onClick={() => setCameraPosition([15, 15, 15])}
-            intent="primary"
-          >
-            Reset Camera
-          </Button>
-        </div>
+        <Collapse isOpen={isControlsExpanded}>
+          <div className="grid-controls-content">
+            <div className="coordinate-info">
+              <p><strong>System:</strong> {getCoordinateSystemLabel()}</p>
+              <p><strong>Min Unit:</strong> {coordinateSettings.minUnit} {coordinateSettings.system === 'Spherical' ? '°' : 'km'}</p>
+            </div>
+            <p>Click on blue grid points to place objects</p>
+            {waitingForPathEndpoint && (
+              <p style={{ color: '#00ff00', fontWeight: 'bold' }}>
+                Click on a grid point to set path endpoint
+              </p>
+            )}
+            <p>Use mouse to orbit, zoom, and pan</p>
+            <div className="control-buttons">
+              <Button 
+                onClick={() => setCameraPosition([15, 15, 15])}
+                intent="primary"
+              >
+                Reset Camera
+              </Button>
+            </div>
+          </div>
+        </Collapse>
       </div>
 
       {/* Three.js Canvas */}
