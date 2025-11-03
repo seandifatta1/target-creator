@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { Button, Icon, Collapse, Menu, MenuItem } from '@blueprintjs/core';
+import { Button, Icon, Collapse, Menu, MenuItem, OverlayToaster, Toast } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
@@ -24,17 +24,37 @@ const GridPoint: React.FC<{
   isHovered?: boolean;
   onPointerOver?: () => void;
   onPointerOut?: () => void;
-}> = ({ position, onClick, onContextMenu, isPermanentlyLit = false, isHovered = false, onPointerOver, onPointerOut }) => {
+  isStartPosition?: boolean;
+  isValidEndpoint?: boolean;
+}> = ({ position, onClick, onContextMenu, isPermanentlyLit = false, isHovered = false, onPointerOver, onPointerOut, isStartPosition = false, isValidEndpoint = false }) => {
   const meshRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.scale.setScalar(isHovered ? 1.2 : 1);
+      let scale = 1;
+      if (isHovered) scale = 1.2;
+      else if (isStartPosition || isValidEndpoint) scale = 1.15;
+      meshRef.current.scale.setScalar(scale);
     }
   });
 
-  // Determine color: permanently lit (red), hovered (red), or default (blue)
-  const color = isPermanentlyLit || isHovered ? "#ff6b6b" : "#4c9eff";
+  // Determine color: start position (red), valid endpoint (white/glowing), permanently lit (red), hovered (red), or default (blue)
+  let color = "#4c9eff";
+  let opacity = 0.7;
+  
+  if (isStartPosition) {
+    color = "#ff6b6b";
+    opacity = 1.0;
+  } else if (isValidEndpoint) {
+    color = "#ffffff";
+    opacity = 0.9;
+  } else if (isPermanentlyLit) {
+    color = "#ff6b6b";
+    opacity = 1.0;
+  } else if (isHovered) {
+    color = "#ff6b6b";
+    opacity = 0.7;
+  }
 
   return (
     <Box
@@ -64,7 +84,9 @@ const GridPoint: React.FC<{
       <meshStandardMaterial 
         color={color}
         transparent 
-        opacity={isPermanentlyLit ? 1.0 : 0.7}
+        opacity={opacity}
+        emissive={isValidEndpoint ? "#ffffff" : "#000000"}
+        emissiveIntensity={isValidEndpoint ? 0.5 : 0}
       />
     </Box>
   );
@@ -139,7 +161,11 @@ const InfiniteGrid: React.FC<{
   relationshipManager?: IRelationshipManager;
   onCoordinatesChange?: (coordinates: Array<{ id: string; position: [number, number, number]; name?: string }>) => void;
   onContextMenuRequest?: (state: { isOpen: boolean; position: [number, number, number] | null; menuPosition: { x: number; y: number } | null }) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest }) => {
+  pathCreationMode?: { isActive: boolean; type: 'line' | 'curve' | null; startPosition: [number, number, number] | null; pathType: string; pathLabel: string };
+  onPathCreationComplete?: (startPosition: [number, number, number], endPosition: [number, number, number], pathType: string, pathLabel: string) => void;
+  onPathCreationCancel?: () => void;
+  onPathCreationError?: (message: string) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest, pathCreationMode, onPathCreationComplete, onPathCreationCancel, onPathCreationError }) => {
   const { gl } = useThree();
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
@@ -183,34 +209,68 @@ const InfiniteGrid: React.FC<{
   //   return () => window.removeEventListener('keydown', handleKeyDown);
   // }, [waitingForPathEndpoint, onWaitingForPathEndpointChange]);
 
+  // Calculate valid endpoints for a line from a start position
+  const getValidLineEndpoints = useCallback((startPos: [number, number, number], gridSize: number): Array<[number, number, number]> => {
+    const [startX, startY, startZ] = startPos;
+    const validPoints: Array<[number, number, number]> = [];
+    const gridHalf = gridSize / 2;
+    
+    // Generate all points in the grid
+    for (let x = -gridHalf; x <= gridHalf; x++) {
+      for (let z = -gridHalf; z <= gridHalf; z++) {
+        const y = 0; // Grid is on y=0 plane
+        
+        // Skip the start position itself
+        if (x === startX && z === startZ) continue;
+        
+        // Check if point is on a straight line (horizontal, vertical, or diagonal)
+        const dx = x - startX;
+        const dz = z - startZ;
+        
+        // Valid if: horizontal (dz === 0), vertical (dx === 0), or diagonal (|dx| === |dz|)
+        const isHorizontal = dz === 0;
+        const isVertical = dx === 0;
+        const isDiagonal = Math.abs(dx) === Math.abs(dz);
+        
+        if (isHorizontal || isVertical || isDiagonal) {
+          validPoints.push([x, y, z]);
+        }
+      }
+    }
+    
+    return validPoints;
+  }, []);
+
   const handleGridPointClick = useCallback((position: [number, number, number]) => {
-    // Commented out - no path endpoint logic
-    // // If waiting for path endpoint, add the point to the existing path
-    // if (waitingForPathEndpoint) {
-    //   // Validate position
-    //   if (position && position.length === 3) {
-    //     // Add the new point to the existing path's points array and light up the tile
-    //     const updatedPaths = placedPaths.map(path => {
-    //       if (path.id === waitingForPathEndpoint.id) {
-    //         const newPoint: [number, number, number] = [position[0], position[1], position[2]];
-    //         // Check if this tile is already lit (avoid duplicates)
-    //         const isAlreadyLit = path.litTiles.some(tile => 
-    //           tile[0] === newPoint[0] && tile[1] === newPoint[1] && tile[2] === newPoint[2]
-    //         );
-    //         return {
-    //           ...path,
-    //           points: [...path.points, newPoint],
-    //           litTiles: isAlreadyLit ? path.litTiles : [...path.litTiles, newPoint]
-    //         };
-    //       }
-    //       return path;
-    //     });
-    //     onPlacedPathsChange(updatedPaths);
-    //     // Continue waiting for more points (user can add as many as they want)
-    //     // Remove the waiting state only when they click elsewhere or press escape
-    //   }
-    //   return;
-    // }
+    // Handle path creation mode
+    if (pathCreationMode?.isActive && pathCreationMode.startPosition) {
+      const startPos = pathCreationMode.startPosition;
+      
+      // Don't allow selecting the start position as endpoint
+      if (position[0] === startPos[0] && position[1] === startPos[1] && position[2] === startPos[2]) {
+        if (onPathCreationError) {
+          onPathCreationError('Cannot select the start point as the endpoint');
+        }
+        return;
+      }
+      
+      if (pathCreationMode.type === 'line') {
+        // Check if the clicked point is a valid endpoint
+        const validEndpoints = getValidLineEndpoints(startPos, gridSize);
+        const isValidEndpoint = validEndpoints.some(ep => 
+          ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
+        );
+        
+        if (isValidEndpoint && onPathCreationComplete) {
+          // Complete the path creation
+          onPathCreationComplete(startPos, position, pathCreationMode.pathType, pathCreationMode.pathLabel);
+        } else if (onPathCreationError) {
+          // Show error toast
+          onPathCreationError('Please select a valid endpoint. Valid endpoints are points directly through the start point (straight or diagonal).');
+        }
+      }
+      return;
+    }
 
     // Check if this grid point is lit by a path - if so, select that path
     const pathWithThisTile = placedPaths.find(path => 
@@ -274,7 +334,7 @@ const InfiniteGrid: React.FC<{
     }
     
     onPlacedObjectsChange([...placedObjects, newObject]);
-  }, [placedPaths, placedObjects, onPlacedObjectsChange, onSelectItem]);
+  }, [placedPaths, placedObjects, onPlacedObjectsChange, onSelectItem, pathCreationMode, getValidLineEndpoints, gridSize, onPathCreationComplete, onPathCreationError, coordinateRegistry, relationshipManager, onCoordinatesChange]);
 
   // Track mouse position globally (same approach as DragTooltip)
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -483,6 +543,21 @@ const InfiniteGrid: React.FC<{
         // Check if this grid point is currently hovered
         const isHovered = positionsEqual(position, hoveredGridPoint);
         
+        // Check if this is the start position for path creation
+        const isStartPosition = pathCreationMode?.isActive && pathCreationMode.startPosition
+          ? positionsEqual(position, pathCreationMode.startPosition)
+          : false;
+        
+        // Calculate valid endpoints if in path creation mode
+        const validEndpoints = pathCreationMode?.isActive && pathCreationMode.type === 'line' && pathCreationMode.startPosition
+          ? getValidLineEndpoints(pathCreationMode.startPosition, gridSize)
+          : [];
+        
+        // Check if this is a valid endpoint
+        const isValidEndpoint = validEndpoints.some(ep => 
+          ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
+        );
+        
         return (
           <GridPoint
             key={`${position[0]}-${position[2]}`}
@@ -495,6 +570,8 @@ const InfiniteGrid: React.FC<{
             isHovered={isHovered}
             onPointerOver={() => setHoveredGridPoint(position)}
             onPointerOut={() => setHoveredGridPoint(null)}
+            isStartPosition={isStartPosition}
+            isValidEndpoint={isValidEndpoint}
           />
         );
       })}
@@ -913,6 +990,25 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
     menuPosition: null
   });
 
+  // Path creation mode state
+  const [pathCreationMode, setPathCreationMode] = useState<{
+    isActive: boolean;
+    type: 'line' | 'curve' | null;
+    startPosition: [number, number, number] | null;
+    pathType: string;
+    pathLabel: string;
+  }>({
+    isActive: false,
+    type: null,
+    startPosition: null,
+    pathType: '',
+    pathLabel: ''
+  });
+
+  // Toaster for notifications
+  const toasterRef = useRef<OverlayToaster | null>(null);
+  const pathCreationToastKeyRef = useRef<string | null>(null);
+
   const handleToggleAnnotation = useCallback((id: string) => {
     setOpenAnnotations(prev => {
       const newSet = new Set(prev);
@@ -957,27 +1053,148 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
   }, [placedObjects, setPlacedObjects, handleToggleAnnotation, coordinateRegistry, relationshipManager, onCoordinatesChange]);
 
   const handleStartPathFromMenu = useCallback((position: [number, number, number], pathType: string = 'path-line', pathLabel: string = 'Line') => {
+    // Enter path creation mode instead of creating path immediately
+    setPathCreationMode({
+      isActive: true,
+      type: pathType === 'path-line' ? 'line' : 'curve',
+      startPosition: position,
+      pathType: pathType,
+      pathLabel: pathLabel
+    });
+    
+    // Show toast notification
+    if (toasterRef.current) {
+      const toastKey = toasterRef.current.show({
+        message: `Path creation mode: ${pathLabel}. Select an endpoint. Click this toast to exit path creation mode.`,
+        intent: 'primary',
+        timeout: 0, // Don't auto-dismiss
+        onDismiss: () => {
+          setPathCreationMode({
+            isActive: false,
+            type: null,
+            startPosition: null,
+            pathType: '',
+            pathLabel: ''
+          });
+          pathCreationToastKeyRef.current = null;
+        },
+        action: {
+          text: 'Cancel',
+          onClick: () => {
+            setPathCreationMode({
+              isActive: false,
+              type: null,
+              startPosition: null,
+              pathType: '',
+              pathLabel: ''
+            });
+            if (toasterRef.current && pathCreationToastKeyRef.current) {
+              toasterRef.current.dismiss(pathCreationToastKeyRef.current);
+            }
+            pathCreationToastKeyRef.current = null;
+          }
+        }
+      });
+      pathCreationToastKeyRef.current = toastKey;
+    }
+    
+    setContextMenuState({ isOpen: false, position: null, menuPosition: null });
+  }, []);
+
+  // Calculate all points on a line between start and end
+  const calculateLinePoints = useCallback((start: [number, number, number], end: [number, number, number]): Array<[number, number, number]> => {
+    const [startX, startY, startZ] = start;
+    const [endX, endY, endZ] = end;
+    
+    const points: Array<[number, number, number]> = [];
+    const dx = endX - startX;
+    const dz = endZ - startZ;
+    
+    // Calculate the number of steps needed (use the larger of dx or dz)
+    const steps = Math.max(Math.abs(dx), Math.abs(dz));
+    
+    if (steps === 0) {
+      // Start and end are the same
+      return [start];
+    }
+    
+    // Interpolate between start and end
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = Math.round(startX + dx * t);
+      const z = Math.round(startZ + dz * t);
+      const y = 0; // Grid is on y=0 plane
+      points.push([x, y, z]);
+    }
+    
+    return points;
+  }, []);
+
+  // Handle path creation completion
+  const handlePathCreationComplete = useCallback((startPosition: [number, number, number], endPosition: [number, number, number], pathType: string, pathLabel: string) => {
+    // Calculate all points on the line between start and end
+    const allPositions = calculateLinePoints(startPosition, endPosition);
     const newPath = {
       id: `path_${Date.now()}`,
       points: [],
       pathType: pathType,
       pathLabel: pathLabel,
       name: undefined,
-      litTiles: [position]
+      litTiles: allPositions
     };
     
     // Register coordinates and create relationships
     if (coordinateRegistry && relationshipManager) {
-      const coord = coordinateRegistry.getOrCreate(position);
-      relationshipManager.attachPathToCoordinates(newPath.id, [coord.id]);
+      const coords = allPositions.map(pos => coordinateRegistry.getOrCreate(pos));
+      relationshipManager.attachPathToCoordinates(newPath.id, coords.map(c => c.id));
       if (onCoordinatesChange) {
         onCoordinatesChange(coordinateRegistry.getAll());
       }
     }
     
     setPlacedPaths([...placedPaths, newPath]);
-    setContextMenuState({ isOpen: false, position: null, menuPosition: null });
-  }, [placedPaths, setPlacedPaths, coordinateRegistry, relationshipManager, onCoordinatesChange]);
+    
+    // Exit path creation mode
+    setPathCreationMode({
+      isActive: false,
+      type: null,
+      startPosition: null,
+      pathType: '',
+      pathLabel: ''
+    });
+    
+    // Dismiss toast
+    if (toasterRef.current && pathCreationToastKeyRef.current) {
+      toasterRef.current.dismiss(pathCreationToastKeyRef.current);
+      pathCreationToastKeyRef.current = null;
+    }
+  }, [placedPaths, setPlacedPaths, coordinateRegistry, relationshipManager, onCoordinatesChange, calculateLinePoints]);
+
+  // Handle path creation error
+  const handlePathCreationError = useCallback((message: string) => {
+    if (toasterRef.current) {
+      toasterRef.current.show({
+        message: message,
+        intent: 'danger',
+        timeout: 3000
+      });
+    }
+  }, []);
+
+  // Handle path creation cancel
+  const handlePathCreationCancel = useCallback(() => {
+    setPathCreationMode({
+      isActive: false,
+      type: null,
+      startPosition: null,
+      pathType: '',
+      pathLabel: ''
+    });
+    if (toasterRef.current && pathCreationToastKeyRef.current) {
+      toasterRef.current.dismiss(pathCreationToastKeyRef.current);
+      pathCreationToastKeyRef.current = null;
+    }
+  }, []);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -1150,6 +1367,10 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           relationshipManager={relationshipManager}
           onCoordinatesChange={onCoordinatesChange}
           onContextMenuRequest={setContextMenuState}
+          pathCreationMode={pathCreationMode}
+          onPathCreationComplete={handlePathCreationComplete}
+          onPathCreationCancel={handlePathCreationCancel}
+          onPathCreationError={handlePathCreationError}
         />
         <OrbitControlsWrapper 
           waitingForPathEndpoint={!!waitingForPathEndpoint}
@@ -1241,6 +1462,9 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           </Menu>
         </div>
       )}
+
+      {/* Toaster for notifications */}
+      <OverlayToaster ref={toasterRef} position="top" />
     </div>
   );
 };
