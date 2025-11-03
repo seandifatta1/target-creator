@@ -433,16 +433,40 @@ const InfiniteGrid: React.FC<{
 };
 
 // OrbitControls wrapper that disables controls while dragging or placing path
-const OrbitControlsWrapper: React.FC<{ waitingForPathEndpoint: boolean }> = ({ waitingForPathEndpoint }) => {
+const OrbitControlsWrapper: React.FC<{ 
+  waitingForPathEndpoint: boolean;
+  onControlsReady?: (controls: any) => void;
+}> = ({ waitingForPathEndpoint, onControlsReady }) => {
   const { isDragging } = useDragTargetContext();
   const shouldDisable = isDragging || waitingForPathEndpoint;
+  const controlsRef = useRef<any>(null);
+  const { camera } = useThree();
+  
+  useEffect(() => {
+    if (controlsRef.current) {
+      if (onControlsReady) {
+        onControlsReady(controlsRef.current);
+      }
+      // Set initial rotation angles: horizontal and vertical adjusted by 5%
+      const horizontalAngle = (-15.75 * Math.PI) / 180; // -15.75 degrees (increased by 5% from -15)
+      const verticalAngle = (19 * Math.PI) / 180; // 19 degrees (decreased by 5% from 20)
+      
+      // Set spherical coordinates
+      // theta is horizontal angle (azimuth), phi is vertical angle (polar)
+      // For OrbitControls, polar angle is measured from the positive Y axis
+      controlsRef.current.setAzimuthalAngle(horizontalAngle);
+      controlsRef.current.setPolarAngle(Math.PI / 2 - verticalAngle);
+      controlsRef.current.update();
+    }
+  }, [onControlsReady]);
   
   return (
     <OrbitControls
+      ref={controlsRef}
       enablePan={!shouldDisable}
       enableZoom={!shouldDisable}
       enableRotate={!shouldDisable}
-      minDistance={5}
+      minDistance={1}
       maxDistance={100}
       enableDamping={true}
       dampingFactor={0.05}
@@ -524,9 +548,10 @@ interface InfiniteGridCanvasProps {
 }
 
 const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, onSelectItem }) => {
-  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([15, 15, 15]);
+  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([10.94, 10.94, 10.94]); // Zoomed out another 5% from [10.42,10.42,10.42]
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(false); // Default to collapsed
+  const controlsRef = useRef<any>(null);
   const [coordinateSettings, setCoordinateSettings] = useState<CoordinateSettings>({
     system: 'Cartesian',
     minUnit: 0.1
@@ -606,7 +631,16 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
             <p>Use mouse to orbit, zoom, and pan</p>
             <div className="control-buttons">
               <Button 
-                onClick={() => setCameraPosition([15, 15, 15])}
+                onClick={() => {
+                  setCameraPosition([10.94, 10.94, 10.94]);
+                  // Reset camera rotation
+                  if (controlsRef.current) {
+                    const horizontalAngle = (-15.75 * Math.PI) / 180; // -15.75 degrees (increased by 5% from -15)
+                    const verticalAngle = (19 * Math.PI) / 180; // 19 degrees (decreased by 5% from 20)
+                    controlsRef.current.setAzimuthalAngle(horizontalAngle);
+                    controlsRef.current.setPolarAngle(Math.PI / 2 - verticalAngle);
+                  }
+                }}
                 intent="primary"
               >
                 Reset Camera
@@ -640,7 +674,12 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
           selectedItem={selectedItem}
           onSelectItem={onSelectItem}
         />
-        <OrbitControlsWrapper waitingForPathEndpoint={!!waitingForPathEndpoint} />
+        <OrbitControlsWrapper 
+          waitingForPathEndpoint={!!waitingForPathEndpoint}
+          onControlsReady={(controls) => {
+            controlsRef.current = controls;
+          }}
+        />
       </Canvas>
 
       {/* Drag Tooltip */}
