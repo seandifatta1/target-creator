@@ -11,6 +11,8 @@ import Target from './Target';
 import Path from './Path';
 import NameModal from './NameModal';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
+import { ICoordinateRegistry } from '../services/CoordinateRegistry';
+import { IRelationshipManager } from '../services/RelationshipManager';
 import './InfiniteGrid.css';
 
 // Grid point component
@@ -121,7 +123,10 @@ const InfiniteGrid: React.FC<{
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
   onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
   onOpenNamingModal: (modal: { isOpen: boolean; itemType: 'target' | 'path' | 'coordinate'; itemId: string; currentName?: string; itemLabel?: string }) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal }) => {
+  coordinateRegistry?: ICoordinateRegistry;
+  relationshipManager?: IRelationshipManager;
+  onCoordinatesChange?: (coordinates: Array<{ id: string; position: [number, number, number]; name?: string }>) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
@@ -215,11 +220,25 @@ const InfiniteGrid: React.FC<{
 
     // If not a lit tile, treat as coordinate click
     setSelectedGridPoint(position);
+    
+    // Register coordinate if registry is available
+    let coordinateId = `coord_${position[0]}_${position[1]}_${position[2]}`;
+    let coordinateName: string | undefined = undefined;
+    
+    if (coordinateRegistry) {
+      const coord = coordinateRegistry.getOrCreate(position);
+      coordinateId = coord.id;
+      coordinateName = coord.name;
+      if (onCoordinatesChange) {
+        onCoordinatesChange(coordinateRegistry.getAll());
+      }
+    }
+    
     onSelectItem({
       type: 'coordinate',
-      id: `coord_${position[0]}_${position[1]}_${position[2]}`,
+      id: coordinateId,
       position: position,
-      name: undefined // Will be set via right-click modal
+      name: coordinateName
     });
     
     // Add a new object at this grid point
@@ -229,6 +248,15 @@ const InfiniteGrid: React.FC<{
       targetId: `target_${Date.now()}`,
       targetLabel: 'Target'
     };
+    
+    // Register coordinate and create relationship
+    if (coordinateRegistry && relationshipManager) {
+      const coord = coordinateRegistry.getOrCreate(position);
+      relationshipManager.attachTargetToCoordinate(newObject.id, coord.id);
+      if (onCoordinatesChange) {
+        onCoordinatesChange(coordinateRegistry.getAll());
+      }
+    }
     
     onPlacedObjectsChange([...placedObjects, newObject]);
   }, [placedPaths, placedObjects, onPlacedObjectsChange, onSelectItem]);
@@ -259,6 +287,19 @@ const InfiniteGrid: React.FC<{
                 litTiles: [point] // Light up the tile that was hovered over
               };
               
+              // Register coordinates and create relationships
+              if (coordinateRegistry && relationshipManager) {
+                const coord = coordinateRegistry.getOrCreate(point);
+                relationshipManager.attachPathToCoordinates(newPath.id, [coord.id]);
+                if (onCoordinatesChange) {
+                  onCoordinatesChange(coordinateRegistry.getAll());
+                }
+              }
+              
+              // Note: For paths with multiple lit tiles, we need to register all of them
+              // This is currently handled on creation, but if paths are updated later,
+              // we should re-register all coordinates in litTiles
+              
               // Add path to state
               onPlacedPathsChange([...placedPaths, newPath]);
               
@@ -288,6 +329,16 @@ const InfiniteGrid: React.FC<{
               targetLabel: result.dragData.label,
               iconEmoji: iconEmoji
             };
+            
+            // Register coordinate and create relationship
+            if (coordinateRegistry && relationshipManager) {
+              const coord = coordinateRegistry.getOrCreate(result.snapPoint);
+              relationshipManager.attachTargetToCoordinate(newObject.id, coord.id);
+              if (onCoordinatesChange) {
+                onCoordinatesChange(coordinateRegistry.getAll());
+              }
+            }
+            
             onPlacedObjectsChange([...placedObjects, newObject]);
             // Open annotation for newly placed object
             onToggleAnnotation(newObject.id);
@@ -730,9 +781,26 @@ const DragTooltip: React.FC<{
 interface InfiniteGridCanvasProps {
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
   onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
+  coordinateRegistry?: ICoordinateRegistry;
+  relationshipManager?: IRelationshipManager;
+  onCoordinatesChange?: (coordinates: Array<{ id: string; position: [number, number, number]; name?: string }>) => void;
+  onPlacedObjectsChange?: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>) => void;
+  onPlacedPathsChange?: (paths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>) => void;
+  placedObjects?: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>;
+  placedPaths?: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>;
 }
 
-const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, onSelectItem }) => {
+const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ 
+  selectedItem, 
+  onSelectItem,
+  coordinateRegistry,
+  relationshipManager,
+  onCoordinatesChange,
+  onPlacedObjectsChange: externalOnPlacedObjectsChange,
+  onPlacedPathsChange: externalOnPlacedPathsChange,
+  placedObjects: externalPlacedObjects,
+  placedPaths: externalPlacedPaths
+}) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([10.94, 10.94, 10.94]); // Zoomed out another 5% from [10.42,10.42,10.42]
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isControlsExpanded, setIsControlsExpanded] = useState(false); // Default to collapsed
@@ -742,8 +810,16 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
     minUnit: 0.1
   });
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
-  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>>([]);
-  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>>([]);
+  
+  // Use external state if provided, otherwise use internal state
+  const [internalPlacedObjects, setInternalPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>>([]);
+  const [internalPlacedPaths, setInternalPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>>([]);
+  
+  const placedObjects = externalPlacedObjects ?? internalPlacedObjects;
+  const placedPaths = externalPlacedPaths ?? internalPlacedPaths;
+  
+  const setPlacedObjects = externalOnPlacedObjectsChange ?? setInternalPlacedObjects;
+  const setPlacedPaths = externalOnPlacedPathsChange ?? setInternalPlacedPaths;
   const [openAnnotations, setOpenAnnotations] = useState<Set<string>>(new Set());
   const [waitingForPathEndpoint, setWaitingForPathEndpoint] = useState<{ id: string; pathType: string; pathLabel: string } | null>(null);
   const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
@@ -820,10 +896,28 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
           });
         }
       }
+    } else if (namingModal.itemType === 'coordinate') {
+      // Update coordinate name in registry
+      if (coordinateRegistry) {
+        coordinateRegistry.updateName(namingModal.itemId, name);
+        if (onCoordinatesChange) {
+          onCoordinatesChange(coordinateRegistry.getAll());
+        }
+        // Update selectedItem if it's the same coordinate
+        if (selectedItem?.type === 'coordinate' && selectedItem.id === namingModal.itemId) {
+          const coord = coordinateRegistry.getById(namingModal.itemId);
+          if (coord) {
+            onSelectItem({
+              type: 'coordinate',
+              id: coord.id,
+              position: coord.position,
+              name: coord.name
+            });
+          }
+        }
+      }
     }
-    // For coordinates, we'll handle this differently since they're created on-the-fly
-    // Could store named coordinates in a separate map or add to a coordinate registry
-  }, [namingModal, placedObjects, placedPaths, selectedItem, onSelectItem]);
+  }, [namingModal, placedObjects, placedPaths, selectedItem, onSelectItem, coordinateRegistry, onCoordinatesChange]);
 
   const getCoordinateSystemLabel = () => {
     switch (coordinateSettings.system) {
@@ -917,6 +1011,9 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
           selectedItem={selectedItem}
           onSelectItem={onSelectItem}
           onOpenNamingModal={setNamingModal}
+          coordinateRegistry={coordinateRegistry}
+          relationshipManager={relationshipManager}
+          onCoordinatesChange={onCoordinatesChange}
         />
         <OrbitControlsWrapper 
           waitingForPathEndpoint={!!waitingForPathEndpoint}

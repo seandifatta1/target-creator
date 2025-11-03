@@ -32,8 +32,10 @@ Cursor should:
 - Variables are camelCase
 
 # Modularity & Stories
-- Prioritize modularity via dependency injection (DI) for components and utilities.
-- Any new component should also include a colocated Storybook story.
+- Prioritize modularity via dependency injection (DI) for components, utilities, and business logic.
+- Business logic (services, managers, repositories) should be DI-friendly with clear interfaces/protocols.
+- Pass dependencies as props or constructor parameters rather than importing directly.
+- Any new component should also include a colocated Storybook story with story actions (using `fn()` from 'storybook/test').
 
 # Testing
 - Any new component should have a corresponding Jest test file in the same folder.

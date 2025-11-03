@@ -1,10 +1,14 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Toolbar from './Toolbar';
 import HamburgerMenu, { HamburgerMenuItem } from './HamburgerMenu';
 import InfiniteGridCanvas from './InfiniteGrid';
 import Drawer from './Drawer';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
+import { useCoordinateRegistry } from '../hooks/useCoordinateRegistry';
+import { useRelationshipManager } from '../hooks/useRelationshipManager';
+import { Coordinate } from '../services/CoordinateRegistry';
+import { RelatedItem } from '../services/RelationshipManager';
 import './App.css';
 
 export type SelectedItem = 
@@ -22,19 +26,20 @@ const App: React.FC = () => {
   const [selectedPathId, setSelectedPathId] = useState<string | undefined>();
   const [selectedCoordinateId, setSelectedCoordinateId] = useState<string | undefined>();
   
-  // Mock data for relationships (will be replaced with real data later)
-  const [mockTargets] = useState([
-    { id: 'target-1', name: 'Target Alpha', label: 'Target 1' },
-    { id: 'target-2', name: 'Target Beta', label: 'Target 2' },
-  ]);
-  const [mockPaths] = useState([
-    { id: 'path-1', name: 'Path One', label: 'Line' },
-    { id: 'path-2', name: 'Path Two', label: 'Line' },
-  ]);
-  const [mockCoordinates] = useState([
-    { id: 'coord-1', name: 'Coordinate A', position: [0, 0, 0] as [number, number, number] },
-    { id: 'coord-2', name: 'Coordinate B', position: [1, 0, 1] as [number, number, number] },
-  ]);
+  // State for placed objects and paths (will be lifted from InfiniteGridCanvas)
+  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>>([]);
+  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>>([]);
+  const [coordinates, setCoordinates] = useState<Array<{ id: string; position: [number, number, number]; name?: string }>>([]);
+  
+  // Business logic services
+  const { registry: coordinateRegistry, getAll: getAllCoordinates, updateName: updateCoordinateName } = useCoordinateRegistry();
+  const { manager: relationshipManager, getRelatedItems, getRelationshipCounts } = useRelationshipManager();
+  
+  // Sync coordinates from registry
+  useEffect(() => {
+    setCoordinates(coordinateRegistry.getAll());
+  }, [coordinateRegistry, coordinates.length]);
+  
   const { isDragging } = useDragTargetContext();
 
   const leftMenuItems: HamburgerMenuItem[] = [
@@ -99,6 +104,13 @@ const App: React.FC = () => {
                 }
               }
             }}
+            coordinateRegistry={coordinateRegistry}
+            relationshipManager={relationshipManager}
+            onCoordinatesChange={(coords) => setCoordinates(coords)}
+            onPlacedObjectsChange={setPlacedObjects}
+            onPlacedPathsChange={setPlacedPaths}
+            placedObjects={placedObjects}
+            placedPaths={placedPaths}
           />
         </div>
         <HamburgerMenu
@@ -145,14 +157,65 @@ const App: React.FC = () => {
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
                   <h4>Relationships</h4>
-                  <div className="detail-row">
-                    <span className="detail-label">Paths:</span>
-                    <span className="detail-value">2 (mock)</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Coordinates:</span>
-                    <span className="detail-value">1 (mock)</span>
-                  </div>
+                  {relationshipManager && selectedItem ? (() => {
+                    const counts = relationshipManager.getRelationshipCounts('target', selectedItem.id);
+                    const relatedItems = relationshipManager.getRelatedItems(
+                      'target',
+                      selectedItem.id,
+                      coordinates,
+                      placedObjects,
+                      placedPaths
+                    );
+                    const relatedTargets = relatedItems.filter(item => item.type === 'target');
+                    const relatedPaths = relatedItems.filter(item => item.type === 'path');
+                    const relatedCoords = relatedItems.filter(item => item.type === 'coordinate');
+                    
+                    return (
+                      <>
+                        <div className="detail-row">
+                          <span className="detail-label">Paths:</span>
+                          <span className="detail-value">{relatedPaths.length}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Coordinates:</span>
+                          <span className="detail-value">{relatedCoords.length}</span>
+                        </div>
+                        {relatedPaths.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Paths:</div>
+                            {relatedPaths.map(item => (
+                              <div 
+                                key={item.id} 
+                                className="detail-value" 
+                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
+                                onClick={() => {
+                                  const path = placedPaths.find(p => p.id === item.id);
+                                  if (path) {
+                                    setSelectedItem({
+                                      type: 'path',
+                                      id: path.id,
+                                      pathType: path.pathType,
+                                      label: path.pathLabel,
+                                      name: path.name,
+                                      points: path.litTiles || []
+                                    });
+                                    setActiveTab('paths');
+                                    setSelectedPathId(path.id);
+                                  }
+                                }}
+                              >
+                                {item.name || item.id}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <div className="detail-row">
+                      <span className="detail-value">Loading relationships...</span>
+                    </div>
+                  )}
                 </div>
               </>
             ) : selectedItem.type === 'path' ? (
@@ -174,14 +237,66 @@ const App: React.FC = () => {
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
                   <h4>Relationships</h4>
-                  <div className="detail-row">
-                    <span className="detail-label">Targets:</span>
-                    <span className="detail-value">3 (mock)</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Coordinates:</span>
-                    <span className="detail-value">{selectedItem.points.length} (mock)</span>
-                  </div>
+                  {relationshipManager && selectedItem ? (() => {
+                    const counts = relationshipManager.getRelationshipCounts('path', selectedItem.id);
+                    const relatedItems = relationshipManager.getRelatedItems(
+                      'path',
+                      selectedItem.id,
+                      coordinates,
+                      placedObjects,
+                      placedPaths
+                    );
+                    const relatedTargets = relatedItems.filter(item => item.type === 'target');
+                    const relatedPaths = relatedItems.filter(item => item.type === 'path');
+                    const relatedCoords = relatedItems.filter(item => item.type === 'coordinate');
+                    
+                    return (
+                      <>
+                        <div className="detail-row">
+                          <span className="detail-label">Targets:</span>
+                          <span className="detail-value">{relatedTargets.length}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Coordinates:</span>
+                          <span className="detail-value">{relatedCoords.length}</span>
+                        </div>
+                        {relatedTargets.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Targets:</div>
+                            {relatedTargets.map(item => (
+                              <div 
+                                key={item.id} 
+                                className="detail-value" 
+                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
+                                onClick={() => {
+                                  const target = placedObjects.find(t => t.id === item.id);
+                                  if (target) {
+                                    setSelectedItem({
+                                      type: 'target',
+                                      id: target.id,
+                                      targetId: target.targetId,
+                                      label: target.targetLabel,
+                                      name: target.name,
+                                      position: target.position,
+                                      iconEmoji: target.iconEmoji
+                                    });
+                                    setActiveTab('targets');
+                                    setSelectedTargetId(target.id);
+                                  }
+                                }}
+                              >
+                                {item.name || item.id}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <div className="detail-row">
+                      <span className="detail-value">Loading relationships...</span>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -201,22 +316,102 @@ const App: React.FC = () => {
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
                   <h4>Relationships</h4>
-                  <div className="detail-row">
-                    <span className="detail-label">Targets:</span>
-                    <span className="detail-value">1 (mock)</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Paths:</span>
-                    <span className="detail-value">2 (mock)</span>
-                  </div>
+                  {relationshipManager && selectedItem ? (() => {
+                    const counts = relationshipManager.getRelationshipCounts('coordinate', selectedItem.id);
+                    const relatedItems = relationshipManager.getRelatedItems(
+                      'coordinate',
+                      selectedItem.id,
+                      coordinates,
+                      placedObjects,
+                      placedPaths
+                    );
+                    const relatedTargets = relatedItems.filter(item => item.type === 'target');
+                    const relatedPaths = relatedItems.filter(item => item.type === 'path');
+                    
+                    return (
+                      <>
+                        <div className="detail-row">
+                          <span className="detail-label">Targets:</span>
+                          <span className="detail-value">{relatedTargets.length}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Paths:</span>
+                          <span className="detail-value">{relatedPaths.length}</span>
+                        </div>
+                        {relatedTargets.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Targets:</div>
+                            {relatedTargets.map(item => (
+                              <div 
+                                key={item.id} 
+                                className="detail-value" 
+                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
+                                onClick={() => {
+                                  const target = placedObjects.find(t => t.id === item.id);
+                                  if (target) {
+                                    setSelectedItem({
+                                      type: 'target',
+                                      id: target.id,
+                                      targetId: target.targetId,
+                                      label: target.targetLabel,
+                                      name: target.name,
+                                      position: target.position,
+                                      iconEmoji: target.iconEmoji
+                                    });
+                                    setActiveTab('targets');
+                                    setSelectedTargetId(target.id);
+                                  }
+                                }}
+                              >
+                                {item.name || item.id}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {relatedPaths.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Paths:</div>
+                            {relatedPaths.map(item => (
+                              <div 
+                                key={item.id} 
+                                className="detail-value" 
+                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
+                                onClick={() => {
+                                  const path = placedPaths.find(p => p.id === item.id);
+                                  if (path) {
+                                    setSelectedItem({
+                                      type: 'path',
+                                      id: path.id,
+                                      pathType: path.pathType,
+                                      label: path.pathLabel,
+                                      name: path.name,
+                                      points: path.litTiles || []
+                                    });
+                                    setActiveTab('paths');
+                                    setSelectedPathId(path.id);
+                                  }
+                                }}
+                              >
+                                {item.name || item.id}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <div className="detail-row">
+                      <span className="detail-value">Loading relationships...</span>
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </div>
         ) : undefined}
-        targets={mockTargets}
-        paths={mockPaths}
-        coordinates={mockCoordinates}
+        targets={placedObjects.map(obj => ({ id: obj.id, name: obj.name, label: obj.targetLabel }))}
+        paths={placedPaths.map(path => ({ id: path.id, name: path.name, label: path.pathLabel }))}
+        coordinates={coordinates.map(coord => ({ id: coord.id, name: coord.name, position: coord.position }))}
         selectedTargetId={selectedTargetId}
         selectedPathId={selectedPathId}
         selectedCoordinateId={selectedCoordinateId}
