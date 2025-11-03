@@ -9,6 +9,9 @@ const root = createRoot(
   document.getElementById('root') as HTMLElement
 );
 
+// Apply dark theme class to body for Blueprint
+document.body.classList.add('bp3-dark');
+
 root.render(
   <React.StrictMode>
     <DragTargetProvider>

@@ -1,21 +1,42 @@
 /* Blueprint Dialog customizations to match existing style */
 .settings-dialog.bp3-dialog {
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(155, 89, 182, 0.1) !important;
   border-radius: 12px;
 }
 
+.settings-dialog .bp3-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 .settings-dialog .bp3-dialog-header {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
   padding: 20px 24px;
+  backdrop-filter: blur(10px);
+}
+
+/* Override any Blueprint default header backgrounds */
+.settings-dialog.bp3-dialog .bp3-dialog-header.bp3-dialog-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 .settings-dialog .bp3-dialog-header .bp3-heading {
-  color: #3498db;
+  color: #9b59b6 !important;
   font-size: 18px;
   font-weight: 600;
+}
+
+.settings-dialog .bp3-dialog-header .bp3-icon {
+  color: #9b59b6 !important;
 }
 
 .settings-dialog .bp3-dialog-body {
@@ -34,7 +55,9 @@
   display: flex;
   align-items: flex-start;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(155, 89, 182, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 2px solid transparent;
   border-radius: 8px;
   cursor: pointer;
@@ -43,8 +66,9 @@
 }
 
 .settings-dialog .coordinate-option.bp3-control.bp3-radio:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #4a5568;
+  background: rgba(155, 89, 182, 0.15);
+  border-color: rgba(155, 89, 182, 0.3);
+  backdrop-filter: blur(15px);
 }
 
 .settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator {
@@ -53,7 +77,16 @@
 }
 
 .settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator::before {
-  background-color: #3498db;
+  background-color: #9b59b6 !important;
+}
+
+.settings-dialog .coordinate-option.bp3-control.bp3-radio input:checked ~ .bp3-control-indicator::before {
+  background-color: #9b59b6 !important;
+}
+
+.settings-dialog .coordinate-option.bp3-control.bp3-radio:checked {
+  background: rgba(155, 89, 182, 0.2);
+  border-color: rgba(155, 89, 182, 0.4);
 }
 
 .settings-dialog .coordinate-option .option-label {
@@ -83,19 +116,32 @@
 
 .settings-dialog .unit-input.bp3-input-group {
   width: 120px;
+  background: rgba(155, 89, 182, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .settings-dialog .unit-input.bp3-input-group .bp3-input {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #4a5568;
+  background: transparent;
+  border: 1px solid rgba(155, 89, 182, 0.3);
   border-radius: 6px;
   color: #e2e8f0;
   font-size: 14px;
 }
 
 .settings-dialog .unit-input.bp3-input-group .bp3-input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #9b59b6;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.3);
+}
+
+.settings-dialog .unit-input.bp3-input-group .bp3-button {
+  background: rgba(155, 89, 182, 0.1);
+  border-color: rgba(155, 89, 182, 0.3);
+  color: #9b59b6;
+}
+
+.settings-dialog .unit-input.bp3-input-group .bp3-button:hover {
+  background: rgba(155, 89, 182, 0.2);
 }
 
 .settings-dialog .unit-suffix {
@@ -112,186 +158,52 @@
   font-size: 14px;
 }
 
-.modal-body {
-  padding: 24px;
-}
-
-.setting-group {
-  margin-bottom: 24px;
-}
-
-.setting-label {
-  display: block;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-
-.unit-label {
-  font-weight: normal;
-  color: #a0aec0;
-  margin-left: 8px;
-}
-
-.coordinate-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.coordinate-option {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.coordinate-option:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #4a5568;
-}
-
-.coordinate-option input[type="radio"] {
-  margin-right: 12px;
-  margin-top: 2px;
-  accent-color: #3498db;
-}
-
-.coordinate-option input[type="radio"]:checked + .option-label {
-  color: #3498db;
-}
-
-.option-label {
-  flex: 1;
-  color: #e2e8f0;
-  font-size: 14px;
-}
-
-.option-label strong {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.option-description {
-  color: #a0aec0;
-  font-size: 12px;
-  margin-top: 4px;
-  font-style: italic;
-}
-
-.unit-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.unit-input {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #4a5568;
-  border-radius: 6px;
-  padding: 8px 12px;
-  color: #e2e8f0;
-  font-size: 14px;
-  width: 80px;
-  transition: border-color 0.2s;
-}
-
-.unit-input:focus {
-  outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-}
-
-.unit-suffix {
-  color: #a0aec0;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.unit-description {
-  color: #a0aec0;
-  font-size: 12px;
-  margin-top: 6px;
-  font-style: italic;
-}
-
-.coordinate-info {
-  background: rgba(0, 0, 0, 0.2);
+.settings-dialog .coordinate-info {
+  background: rgba(155, 89, 182, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(155, 89, 182, 0.3);
   border-radius: 8px;
   padding: 16px;
   margin-top: 20px;
 }
 
-.coordinate-info h3 {
+.settings-dialog .coordinate-info h3 {
   margin: 0 0 12px 0;
-  color: #3498db;
+  color: #9b59b6;
   font-size: 16px;
   font-weight: 600;
 }
 
-.system-details {
+.settings-dialog .system-details {
   color: #e2e8f0;
 }
 
-.system-details p {
+.settings-dialog .system-details p {
   margin: 0 0 8px 0;
   font-weight: 600;
 }
 
-.system-details ul {
+.settings-dialog .system-details ul {
   margin: 0;
   padding-left: 20px;
 }
 
-.system-details li {
+.settings-dialog .system-details li {
   margin-bottom: 4px;
   font-size: 13px;
   line-height: 1.4;
 }
 
-.modal-footer {
+/* Modal footer styling */
+.settings-dialog .bp3-dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #4a5568;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 12px 12px;
-}
-
-.cancel-button,
-.save-button {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.cancel-button {
-  background: #4a5568;
-  color: #e2e8f0;
-}
-
-.cancel-button:hover {
-  background: #5a6578;
-}
-
-.save-button {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
-}
-
-.save-button:hover {
-  background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
-  transform: translateY(-1px);
+  border-top: 1px solid rgba(155, 89, 182, 0.2);
+  background: transparent;
+  backdrop-filter: blur(10px);
 }
 
 /* Responsive design */

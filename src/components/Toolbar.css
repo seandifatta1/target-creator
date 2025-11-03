@@ -1,12 +1,21 @@
 /* Blueprint Navbar customizations to match existing style */
-.custom-navbar.bp3-navbar {
-  height: 48px;
-  background: #2c2f33;
-  border-bottom: 1px solid #23272a;
-  padding: 0 16px;
+/* Use highest specificity to override Blueprint defaults */
+.custom-navbar.bp3-navbar,
+.bp3-navbar.custom-navbar,
+.custom-navbar.bp6-navbar,
+.bp6-navbar.custom-navbar {
+  height: 48px !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  background-image: none !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
+  padding: 0 16px !important;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .toolbar-left {
@@ -61,12 +70,39 @@
   transform: translateY(-5px) rotate(-45deg);
 }
 
-.toolbar-title.bp3-heading {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0;
+.toolbar-title.bp3-heading,
+.toolbar-title.bp6-heading,
+.custom-navbar .bp3-heading.toolbar-title,
+.custom-navbar .bp6-heading.toolbar-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
   user-select: none;
+}
+
+.custom-navbar .bp3-button.bp3-minimal:hover,
+.custom-navbar .bp6-button.bp6-minimal:hover {
+  background: rgba(155, 89, 182, 0.15) !important;
+  background-color: rgba(155, 89, 182, 0.15) !important;
+}
+
+.custom-navbar .bp3-button.bp3-minimal .bp3-icon,
+.custom-navbar .bp6-button.bp6-minimal .bp6-icon,
+.custom-navbar .bp3-icon,
+.custom-navbar .bp6-icon {
+  color: #9b59b6 !important;
+}
+
+/* Override any default button colors */
+.custom-navbar .bp3-button,
+.custom-navbar .bp6-button {
+  color: #dcddde !important;
+}
+
+.custom-navbar .bp3-button:hover,
+.custom-navbar .bp6-button:hover {
+  color: #ffffff !important;
 }
 
 .toolbar-center {

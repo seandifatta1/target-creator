@@ -1,21 +1,29 @@
 /* Blueprint Drawer customizations to match existing style */
 .custom-drawer.bp3-drawer {
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(155, 89, 182, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(155, 89, 182, 0.1);
+}
+
+.custom-drawer .bp3-drawer-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .custom-drawer .bp3-drawer-header {
   background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2);
   padding: 20px 24px;
+  backdrop-filter: blur(10px);
 }
 
 .custom-drawer .bp3-drawer-header .bp3-heading {
-  color: #3498db;
+  color: #9b59b6;
   font-size: 18px;
   font-weight: 600;
   margin: 0;
@@ -62,7 +70,7 @@
 
 .detail-section h4 {
   margin: 0 0 8px 0;
-  color: #3498db;
+  color: #9b59b6;
   font-size: 16px;
   font-weight: 600;
 }

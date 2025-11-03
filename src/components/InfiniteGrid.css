@@ -25,14 +25,14 @@
 
 .grid-controls h3 {
   margin: 0 0 16px 0;
-  color: #3498db;
+  color: #9b59b6;
   font-size: 18px;
   font-weight: 600;
 }
 
 .coordinate-info {
-  background: rgba(52, 152, 219, 0.1);
-  border: 1px solid rgba(52, 152, 219, 0.3);
+  background: rgba(155, 89, 182, 0.1);
+  border: 1px solid rgba(155, 89, 182, 0.3);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 16px;
@@ -45,7 +45,7 @@
 }
 
 .coordinate-info strong {
-  color: #3498db;
+  color: #9b59b6;
 }
 
 .grid-controls p {
@@ -61,8 +61,8 @@
   margin-top: 16px;
 }
 
-.grid-controls button {
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+.grid-controls .bp3-button {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
   color: white;
   border: none;
   padding: 10px 16px;
@@ -71,13 +71,13 @@
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.4) !important;
 }
 
-.grid-controls button:hover {
-  background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
+.grid-controls .bp3-button:hover {
+  background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.5) !important;
 }
 
 .settings-button {
