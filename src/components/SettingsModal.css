@@ -1,92 +1,121 @@
 /* Blueprint Dialog customizations to match existing style */
-.settings-dialog.bp3-dialog {
+/* Use highest specificity to override Blueprint defaults */
+.settings-dialog.bp3-dialog,
+.settings-dialog.bp6-dialog,
+.bp3-dialog.settings-dialog,
+.bp6-dialog.settings-dialog {
   background: rgba(0, 0, 0, 0.85) !important;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  background-image: none !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   border: 1px solid rgba(155, 89, 182, 0.2) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(155, 89, 182, 0.1) !important;
-  border-radius: 12px;
+  border-radius: 12px !important;
 }
 
-.settings-dialog .bp3-overlay-backdrop {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+.settings-dialog .bp3-overlay-backdrop,
+.settings-dialog .bp6-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
-.settings-dialog .bp3-dialog-header {
-  background: transparent !important;
-  background-image: none !important;
-  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
-  padding: 20px 24px;
-  backdrop-filter: blur(10px);
-}
-
-/* Override any Blueprint default header backgrounds */
-.settings-dialog.bp3-dialog .bp3-dialog-header.bp3-dialog-header {
+.settings-dialog .bp3-dialog-header,
+.settings-dialog .bp6-dialog-header,
+.settings-dialog.bp3-dialog .bp3-dialog-header,
+.settings-dialog.bp6-dialog .bp6-dialog-header {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
+  padding: 20px 24px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
-.settings-dialog .bp3-dialog-header .bp3-heading {
+.settings-dialog .bp3-dialog-header .bp3-heading,
+.settings-dialog .bp6-dialog-header .bp6-heading,
+.settings-dialog .bp3-heading,
+.settings-dialog .bp6-heading {
   color: #9b59b6 !important;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 18px !important;
+  font-weight: 600 !important;
 }
 
-.settings-dialog .bp3-dialog-header .bp3-icon {
+.settings-dialog .bp3-dialog-header .bp3-icon,
+.settings-dialog .bp6-dialog-header .bp6-icon,
+.settings-dialog .bp3-icon,
+.settings-dialog .bp6-icon {
   color: #9b59b6 !important;
 }
 
-.settings-dialog .bp3-dialog-body {
-  padding: 24px;
-  color: #e2e8f0;
+.settings-dialog .bp3-dialog-body,
+.settings-dialog .bp6-dialog-body {
+  padding: 24px !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
 }
 
 /* Radio group and radio button styling */
-.settings-dialog .coordinate-options.bp3-control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.settings-dialog .coordinate-options.bp3-control-group,
+.settings-dialog .coordinate-options.bp6-control-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px;
-  background: rgba(155, 89, 182, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 2px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
+.settings-dialog .coordinate-option.bp3-control.bp3-radio,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio,
+.settings-dialog .bp3-control.bp3-radio.coordinate-option,
+.settings-dialog .bp6-control.bp6-radio.coordinate-option {
+  display: flex !important;
+  align-items: flex-start !important;
+  padding: 16px !important;
+  background: rgba(155, 89, 182, 0.05) !important;
+  background-color: rgba(155, 89, 182, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 2px solid transparent !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
   transition: all 0.2s;
-  margin: 0;
+  margin: 0 !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio:hover {
-  background: rgba(155, 89, 182, 0.15);
-  border-color: rgba(155, 89, 182, 0.3);
-  backdrop-filter: blur(15px);
+.settings-dialog .coordinate-option.bp3-control.bp3-radio:hover,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio:hover,
+.settings-dialog .bp3-control.bp3-radio.coordinate-option:hover,
+.settings-dialog .bp6-control.bp6-radio.coordinate-option:hover {
+  background: rgba(155, 89, 182, 0.15) !important;
+  background-color: rgba(155, 89, 182, 0.15) !important;
+  border-color: rgba(155, 89, 182, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator {
-  margin-right: 12px;
-  margin-top: 2px;
+.settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio .bp6-control-indicator {
+  margin-right: 12px !important;
+  margin-top: 2px !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator::before {
+.settings-dialog .coordinate-option.bp3-control.bp3-radio .bp3-control-indicator::before,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio .bp6-control-indicator::before {
   background-color: #9b59b6 !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio input:checked ~ .bp3-control-indicator::before {
+.settings-dialog .coordinate-option.bp3-control.bp3-radio input:checked ~ .bp3-control-indicator::before,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio input:checked ~ .bp6-control-indicator::before {
   background-color: #9b59b6 !important;
 }
 
-.settings-dialog .coordinate-option.bp3-control.bp3-radio:checked {
-  background: rgba(155, 89, 182, 0.2);
-  border-color: rgba(155, 89, 182, 0.4);
+.settings-dialog .coordinate-option.bp3-control.bp3-radio:checked,
+.settings-dialog .coordinate-option.bp6-control.bp6-radio:checked,
+.settings-dialog .bp3-control.bp3-radio.coordinate-option:checked,
+.settings-dialog .bp6-control.bp6-radio.coordinate-option:checked {
+  background: rgba(155, 89, 182, 0.2) !important;
+  background-color: rgba(155, 89, 182, 0.2) !important;
+  border-color: rgba(155, 89, 182, 0.4) !important;
 }
 
 .settings-dialog .coordinate-option .option-label {
@@ -114,34 +143,42 @@
   gap: 8px;
 }
 
-.settings-dialog .unit-input.bp3-input-group {
-  width: 120px;
-  background: rgba(155, 89, 182, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+.settings-dialog .unit-input.bp3-input-group,
+.settings-dialog .unit-input.bp6-input-group {
+  width: 120px !important;
+  background: rgba(155, 89, 182, 0.05) !important;
+  background-color: rgba(155, 89, 182, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
-.settings-dialog .unit-input.bp3-input-group .bp3-input {
-  background: transparent;
-  border: 1px solid rgba(155, 89, 182, 0.3);
-  border-radius: 6px;
-  color: #e2e8f0;
-  font-size: 14px;
+.settings-dialog .unit-input.bp3-input-group .bp3-input,
+.settings-dialog .unit-input.bp6-input-group .bp6-input {
+  background: transparent !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+  border-radius: 6px !important;
+  color: #e2e8f0 !important;
+  font-size: 14px !important;
 }
 
-.settings-dialog .unit-input.bp3-input-group .bp3-input:focus {
-  border-color: #9b59b6;
-  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.3);
+.settings-dialog .unit-input.bp3-input-group .bp3-input:focus,
+.settings-dialog .unit-input.bp6-input-group .bp6-input:focus {
+  border-color: #9b59b6 !important;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.3) !important;
 }
 
-.settings-dialog .unit-input.bp3-input-group .bp3-button {
-  background: rgba(155, 89, 182, 0.1);
-  border-color: rgba(155, 89, 182, 0.3);
-  color: #9b59b6;
+.settings-dialog .unit-input.bp3-input-group .bp3-button,
+.settings-dialog .unit-input.bp6-input-group .bp6-button {
+  background: rgba(155, 89, 182, 0.1) !important;
+  background-color: rgba(155, 89, 182, 0.1) !important;
+  border-color: rgba(155, 89, 182, 0.3) !important;
+  color: #9b59b6 !important;
 }
 
-.settings-dialog .unit-input.bp3-input-group .bp3-button:hover {
-  background: rgba(155, 89, 182, 0.2);
+.settings-dialog .unit-input.bp3-input-group .bp3-button:hover,
+.settings-dialog .unit-input.bp6-input-group .bp6-button:hover {
+  background: rgba(155, 89, 182, 0.2) !important;
+  background-color: rgba(155, 89, 182, 0.2) !important;
 }
 
 .settings-dialog .unit-suffix {
@@ -150,12 +187,13 @@
   font-weight: 500;
 }
 
-.settings-dialog .setting-label.bp3-label {
-  display: block;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-bottom: 12px;
-  font-size: 14px;
+.settings-dialog .setting-label.bp3-label,
+.settings-dialog .setting-label.bp6-label {
+  display: block !important;
+  font-weight: 600 !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 12px !important;
+  font-size: 14px !important;
 }
 
 .settings-dialog .coordinate-info {
@@ -196,14 +234,17 @@
 }
 
 /* Modal footer styling */
-.settings-dialog .bp3-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid rgba(155, 89, 182, 0.2);
-  background: transparent;
-  backdrop-filter: blur(10px);
+.settings-dialog .bp3-dialog-footer,
+.settings-dialog .bp6-dialog-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  padding: 20px 24px !important;
+  border-top: 1px solid rgba(155, 89, 182, 0.2) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
 /* Responsive design */
