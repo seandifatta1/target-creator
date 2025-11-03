@@ -17,6 +17,7 @@ export interface TargetProps {
   onPointerOver: () => void;
   onPointerOut: () => void;
   onClick?: () => void;
+  onContextMenu?: (e: any) => void;
 }
 
 // Annotation component for targets
@@ -90,7 +91,8 @@ const Target: React.FC<TargetProps> = ({
   onToggleAnnotation,
   onPointerOver,
   onPointerOut,
-  onClick
+  onClick,
+  onContextMenu
 }) => {
   // Position icon slightly above the grid point (0.5 units up)
   const iconPosition: [number, number, number] = [position[0], position[1] + 0.5, position[2]];
@@ -115,6 +117,12 @@ const Target: React.FC<TargetProps> = ({
           e.stopPropagation();
           if (onClick) {
             onClick();
+          }
+        }}
+        onContextMenu={(e) => {
+          e.stopPropagation();
+          if (onContextMenu) {
+            onContextMenu(e);
           }
         }}
       >

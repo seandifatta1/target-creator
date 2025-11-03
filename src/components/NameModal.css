@@ -1,0 +1,79 @@
+/* Name Modal styling to match theme */
+.name-modal.bp3-dialog,
+.name-modal.bp6-dialog {
+  background: rgba(0, 0, 0, 0.85) !important;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  background-image: none !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.name-modal .bp3-dialog-header,
+.name-modal .bp6-dialog-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
+  padding: 20px 24px !important;
+}
+
+.name-modal .bp3-dialog-header .bp3-heading,
+.name-modal .bp6-dialog-header .bp6-heading {
+  color: #9b59b6 !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.name-modal-content {
+  padding: 24px;
+  color: #e2e8f0 !important;
+}
+
+.name-modal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.name-modal-label-value {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  font-family: 'Courier New', monospace !important;
+}
+
+.name-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* Input styling */
+.name-modal .bp3-input,
+.name-modal .bp6-input {
+  background: rgba(0, 0, 0, 0.6) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  background-image: none !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+.name-modal .bp3-input:focus,
+.name-modal .bp6-input:focus {
+  border-color: #9b59b6 !important;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2) !important;
+}
+
+.name-modal .bp3-label,
+.name-modal .bp6-label {
+  color: #94a3b8 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+}
+

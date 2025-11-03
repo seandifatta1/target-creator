@@ -9,6 +9,7 @@ import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsM
 import CoordinateAxes from './CoordinateAxes';
 import Target from './Target';
 import Path from './Path';
+import NameModal from './NameModal';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './InfiniteGrid.css';
 
@@ -16,8 +17,9 @@ import './InfiniteGrid.css';
 const GridPoint: React.FC<{ 
   position: [number, number, number]; 
   onClick: () => void;
+  onContextMenu?: (e: any) => void;
   isPermanentlyLit?: boolean;
-}> = ({ position, onClick, isPermanentlyLit = false }) => {
+}> = ({ position, onClick, onContextMenu, isPermanentlyLit = false }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -36,6 +38,12 @@ const GridPoint: React.FC<{
       position={position}
       args={[0.8, 0.8, 0.8]}
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.stopPropagation();
+        if (onContextMenu) {
+          onContextMenu(e);
+        }
+      }}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
@@ -101,18 +109,19 @@ const DragHandler: React.FC<{
 const InfiniteGrid: React.FC<{ 
   coordinateSettings: CoordinateSettings;
   onHoveredObjectChange: (id: string | null) => void;
-  onPlacedObjectsChange: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>) => void;
-  onPlacedPathsChange: (paths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; litTiles: [number, number, number][] }>) => void;
-  placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
-  placedPaths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; litTiles: [number, number, number][] }>;
+  onPlacedObjectsChange: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>) => void;
+  onPlacedPathsChange: (paths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>) => void;
+  placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>;
+  placedPaths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>;
   openAnnotations: Set<string>;
   onToggleAnnotation: (id: string) => void;
   waitingForPathEndpoint: { id: string; pathType: string; pathLabel: string } | null;
   onWaitingForPathEndpointChange: (state: { id: string; pathType: string; pathLabel: string } | null) => void;
   onPathEndpointSnapPointChange: (point: [number, number, number] | null) => void;
-  selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | null;
-  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; points: [number, number, number][] } | null) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem }) => {
+  selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
+  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
+  onOpenNamingModal: (modal: { isOpen: boolean; itemType: 'target' | 'path' | 'coordinate'; itemId: string; currentName?: string; itemLabel?: string }) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
@@ -198,14 +207,20 @@ const InfiniteGrid: React.FC<{
         id: pathWithThisTile.id,
         pathType: pathWithThisTile.pathType,
         label: pathWithThisTile.pathLabel,
+        name: pathWithThisTile.name,
         points: pathWithThisTile.litTiles || [] // Pass litTiles as points for drawer display
       });
       return;
     }
 
-    // If not a lit tile, clear selection and proceed with normal grid point logic
+    // If not a lit tile, treat as coordinate click
     setSelectedGridPoint(position);
-    onSelectItem(null);
+    onSelectItem({
+      type: 'coordinate',
+      id: `coord_${position[0]}_${position[1]}_${position[2]}`,
+      position: position,
+      name: undefined // Will be set via right-click modal
+    });
     
     // Add a new object at this grid point
     const newObject = {
@@ -240,6 +255,7 @@ const InfiniteGrid: React.FC<{
                 points: [], // Commented out - not using points
                 pathType: result.dragData.id,
                 pathLabel: result.dragData.label,
+                name: undefined, // Will be set via right-click modal
                 litTiles: [point] // Light up the tile that was hovered over
               };
               
@@ -353,6 +369,16 @@ const InfiniteGrid: React.FC<{
             onClick={() => {
               handleGridPointClick(position);
             }}
+            onContextMenu={(e) => {
+              e.stopPropagation();
+              onOpenNamingModal({
+                isOpen: true,
+                itemType: 'coordinate',
+                itemId: `coord_${position[0]}_${position[1]}_${position[2]}`,
+                currentName: undefined,
+                itemLabel: `[${position[0]}, ${position[1]}, ${position[2]}]`
+              });
+            }}
             isPermanentlyLit={isLitByPath}
           />
         );
@@ -398,37 +424,142 @@ const InfiniteGrid: React.FC<{
         );
       })()} */}
 
-      {/* Commented out - no path rendering */}
-      {/* {placedPaths.map((path) => {
-        // Validate path before rendering
-        if (!path || !path.points || !Array.isArray(path.points) || path.points.length === 0) {
-          console.warn(`Invalid path data:`, path);
+      {/* Render paths as thick white lines connecting lit tiles */}
+      {placedPaths.map((path) => {
+        // Validate path has lit tiles
+        if (!path || !path.litTiles || path.litTiles.length === 0) {
           return null;
         }
         
+        // If only one tile, render a small sphere at that position
+        if (path.litTiles.length === 1) {
+          const tile = path.litTiles[0];
+          const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
+          
+          return (
+            <Sphere
+              key={path.id}
+              position={[tile[0], tile[1] + 0.5, tile[2]]}
+              args={[0.4, 16, 16]}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectItem({
+                  type: 'path',
+                  id: path.id,
+                  pathType: path.pathType,
+                  label: path.pathLabel,
+                  name: path.name,
+                  points: path.litTiles || []
+                });
+              }}
+              onContextMenu={(e) => {
+                e.stopPropagation();
+                onOpenNamingModal({
+                  isOpen: true,
+                  itemType: 'path',
+                  itemId: path.id,
+                  currentName: path.name,
+                  itemLabel: path.pathLabel
+                });
+              }}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = 'pointer';
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = 'auto';
+              }}
+            >
+              <meshStandardMaterial color={isSelected ? "#00ff00" : "#ffffff"} />
+            </Sphere>
+          );
+        }
+        
+        // Multiple tiles: connect them with lines
+        // Create lines between consecutive tiles
+        const lines: React.ReactNode[] = [];
+        const clickableBoxes: React.ReactNode[] = [];
         const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
+        const lineColor = isSelected ? "#00ff00" : "#ffffff";
+        const lineWidth = isSelected ? 8 : 6;
+        
+        for (let i = 0; i < path.litTiles.length - 1; i++) {
+          const start = path.litTiles[i];
+          const end = path.litTiles[i + 1];
+          
+          // Create line between tiles
+          lines.push(
+            <Line
+              key={`line-${path.id}-${i}`}
+              points={[
+                new THREE.Vector3(start[0], start[1] + 0.5, start[2]),
+                new THREE.Vector3(end[0], end[1] + 0.5, end[2])
+              ]}
+              color={lineColor}
+              lineWidth={lineWidth}
+            />
+          );
+          
+          // Create clickable box for this segment
+          const midpoint = new THREE.Vector3(
+            (start[0] + end[0]) / 2,
+            (start[1] + end[1]) / 2 + 0.5,
+            (start[2] + end[2]) / 2
+          );
+          const length = new THREE.Vector3(
+            end[0] - start[0],
+            end[1] - start[1],
+            end[2] - start[2]
+          ).length();
+          
+          clickableBoxes.push(
+            <Box
+              key={`box-${path.id}-${i}`}
+              position={[midpoint.x, midpoint.y, midpoint.z]}
+              args={[Math.max(length, 0.8), 0.8, 0.8]}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectItem({
+                  type: 'path',
+                  id: path.id,
+                  pathType: path.pathType,
+                  label: path.pathLabel,
+                  name: path.name,
+                  points: path.litTiles || []
+                });
+              }}
+              onContextMenu={(e) => {
+                e.stopPropagation();
+                onOpenNamingModal({
+                  isOpen: true,
+                  itemType: 'path',
+                  itemId: path.id,
+                  currentName: path.name,
+                  itemLabel: path.pathLabel
+                });
+              }}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = 'pointer';
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = 'auto';
+              }}
+            >
+              <meshStandardMaterial transparent opacity={0} />
+            </Box>
+          );
+        }
         
         return (
-          <Path
-            key={path.id}
-            id={path.id}
-            points={path.points}
-            pathType={path.pathType}
-            pathLabel={path.pathLabel}
-            color={isSelected ? "#00ff00" : "#3498db"}
-            lineWidth={isSelected ? 4 : 3}
-            onClick={() => {
-              onSelectItem({
-                type: 'path',
-                id: path.id,
-                pathType: path.pathType,
-                label: path.pathLabel,
-                points: path.points
-              });
-            }}
-          />
+          <group key={path.id}>
+            {lines}
+            {clickableBoxes}
+          </group>
         );
-      })} */}
+      })}
 
       {/* Placed objects */}
       {placedObjects.map((obj) => {
@@ -459,8 +590,19 @@ const InfiniteGrid: React.FC<{
                 id: obj.id,
                 targetId: obj.targetId,
                 label: obj.targetLabel,
+                name: obj.name,
                 position: obj.position,
                 iconEmoji: obj.iconEmoji
+              });
+            }}
+            onContextMenu={(e) => {
+              e.stopPropagation();
+              onOpenNamingModal({
+                isOpen: true,
+                itemType: 'target',
+                itemId: obj.id,
+                currentName: obj.name,
+                itemLabel: obj.targetLabel
               });
             }}
           />
@@ -522,7 +664,7 @@ const DragTooltip: React.FC<{
   snapPoint: [number, number, number] | null;
   coordinateSettings: CoordinateSettings;
   hoveredObject: string | null;
-  placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
+  placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>;
   openAnnotations: Set<string>;
   waitingForPathEndpoint: { id: string; pathType: string; pathLabel: string } | null;
 }> = ({ snapPoint, coordinateSettings, hoveredObject, placedObjects, openAnnotations, waitingForPathEndpoint }) => {
@@ -586,8 +728,8 @@ const DragTooltip: React.FC<{
 
 // Main infinite grid canvas component
 interface InfiniteGridCanvasProps {
-  selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | null;
-  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; points: [number, number, number][] } | null) => void;
+  selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
+  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
 }
 
 const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, onSelectItem }) => {
@@ -600,12 +742,25 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
     minUnit: 0.1
   });
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
-  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
-  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; litTiles: [number, number, number][] }>>([]);
+  const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; name?: string; iconEmoji?: string }>>([]);
+  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>>([]);
   const [openAnnotations, setOpenAnnotations] = useState<Set<string>>(new Set());
   const [waitingForPathEndpoint, setWaitingForPathEndpoint] = useState<{ id: string; pathType: string; pathLabel: string } | null>(null);
   const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
   const { snapPoint } = useDragTargetContext();
+  
+  // Naming modal state
+  const [namingModal, setNamingModal] = useState<{
+    isOpen: boolean;
+    itemType: 'target' | 'path' | 'coordinate';
+    itemId: string;
+    currentName?: string;
+    itemLabel?: string;
+  }>({
+    isOpen: false,
+    itemType: 'target',
+    itemId: '',
+  });
 
   const handleToggleAnnotation = useCallback((id: string) => {
     setOpenAnnotations(prev => {
@@ -624,6 +779,51 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
     // Here you could implement coordinate system conversion logic
     console.log('Coordinate system changed to:', newSettings);
   }, []);
+
+  const handleNameSave = useCallback((name: string) => {
+    if (namingModal.itemType === 'target') {
+      const updatedObjects = placedObjects.map(obj => 
+        obj.id === namingModal.itemId ? { ...obj, name } : obj
+      );
+      setPlacedObjects(updatedObjects);
+      // Update selectedItem if it's the same target
+      if (selectedItem?.type === 'target' && selectedItem.id === namingModal.itemId) {
+        const updatedObj = updatedObjects.find(obj => obj.id === namingModal.itemId);
+        if (updatedObj) {
+          onSelectItem({
+            type: 'target',
+            id: updatedObj.id,
+            targetId: updatedObj.targetId,
+            label: updatedObj.targetLabel,
+            name: updatedObj.name,
+            position: updatedObj.position,
+            iconEmoji: updatedObj.iconEmoji
+          });
+        }
+      }
+    } else if (namingModal.itemType === 'path') {
+      const updatedPaths = placedPaths.map(path => 
+        path.id === namingModal.itemId ? { ...path, name } : path
+      );
+      setPlacedPaths(updatedPaths);
+      // Update selectedItem if it's the same path
+      if (selectedItem?.type === 'path' && selectedItem.id === namingModal.itemId) {
+        const updatedPath = updatedPaths.find(path => path.id === namingModal.itemId);
+        if (updatedPath) {
+          onSelectItem({
+            type: 'path',
+            id: updatedPath.id,
+            pathType: updatedPath.pathType,
+            label: updatedPath.pathLabel,
+            name: updatedPath.name,
+            points: updatedPath.litTiles || []
+          });
+        }
+      }
+    }
+    // For coordinates, we'll handle this differently since they're created on-the-fly
+    // Could store named coordinates in a separate map or add to a coordinate registry
+  }, [namingModal, placedObjects, placedPaths, selectedItem, onSelectItem]);
 
   const getCoordinateSystemLabel = () => {
     switch (coordinateSettings.system) {
@@ -716,6 +916,7 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
           onPathEndpointSnapPointChange={setPathEndpointSnapPoint}
           selectedItem={selectedItem}
           onSelectItem={onSelectItem}
+          onOpenNamingModal={setNamingModal}
         />
         <OrbitControlsWrapper 
           waitingForPathEndpoint={!!waitingForPathEndpoint}
@@ -741,6 +942,16 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
         onClose={() => setIsSettingsOpen(false)}
         settings={coordinateSettings}
         onSettingsChange={handleSettingsChange}
+      />
+
+      {/* Name Modal */}
+      <NameModal
+        isOpen={namingModal.isOpen}
+        onClose={() => setNamingModal({ ...namingModal, isOpen: false })}
+        onSave={handleNameSave}
+        currentName={namingModal.currentName}
+        itemType={namingModal.itemType}
+        itemLabel={namingModal.itemLabel}
       />
     </div>
   );
