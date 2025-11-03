@@ -4,7 +4,16 @@
 Cursor should:
 - Always use TypeScript instead of JavaScript.
 - Prefer React functional components with hooks.
-- Use Blueprint.js components and styling where relevant (use other libraries like three.js for canvas where relevant).
+- **ALWAYS use Blueprint.js components as the default choice** for standard UI elements:
+  - Use `Button` from `@blueprintjs/core` instead of custom buttons
+  - Use `Dialog` from `@blueprintjs/core` instead of custom modals
+  - Use `Drawer` from `@blueprintjs/core` instead of custom drawers/panels
+  - Use `Navbar` from `@blueprintjs/core` instead of custom toolbars
+  - Use `Menu` and `MenuDivider` from `@blueprintjs/core` instead of custom menus
+  - Use `InputGroup`, `NumericInput`, `RadioGroup`, `Radio` for form inputs
+  - Use `Icon` from `@blueprintjs/icons` instead of custom SVG icons
+  - Only create custom components for 3D canvas elements (Three.js) or when Blueprint doesn't provide equivalent functionality
+- Preserve existing functionality and color schemes when migrating
 - Follow ESLint and Prettier conventions.
 
 # Documentation Files

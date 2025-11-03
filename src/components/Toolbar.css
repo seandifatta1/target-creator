@@ -1,7 +1,5 @@
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Blueprint Navbar customizations to match existing style */
+.custom-navbar.bp3-navbar {
   height: 48px;
   background: #2c2f33;
   border-bottom: 1px solid #23272a;
@@ -63,7 +61,7 @@
   transform: translateY(-5px) rotate(-45deg);
 }
 
-.toolbar-title {
+.toolbar-title.bp3-heading {
   font-size: 16px;
   font-weight: 600;
   color: #ffffff;

@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Text } from '@react-three/drei';
 import { Html } from '@react-three/drei';
+import { Button, Icon } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import { CoordinateSettings } from './SettingsModal';
 
 export interface TargetProps {
@@ -51,16 +53,17 @@ const TargetAnnotation: React.FC<{
         <div className="tooltip-content">
           <div className="tooltip-header-row">
             <div className="tooltip-header">{label}</div>
-            <button 
+            <Button 
               className="annotation-close"
               onClick={(e) => {
                 e.stopPropagation();
                 onClose();
               }}
               aria-label="Close annotation"
-            >
-              ×
-            </button>
+              icon={<Icon icon={IconNames.CROSS} />}
+              minimal
+              small
+            />
           </div>
           <div className="tooltip-coords">
             X: {formatCoordinate(position[0])}, 

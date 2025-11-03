@@ -46,6 +46,31 @@
   flex-direction: column;
   gap: 6px;
   flex: 1;
+  overflow-y: auto;
+}
+
+/* Blueprint Menu customizations */
+.hamburger-menu.bp3-menu {
+  background: transparent;
+  padding: 0;
+  min-width: auto;
+}
+
+.hamburger-item.bp3-menu-item,
+.hamburger-item-child.bp3-menu-item {
+  background: none;
+  color: #dcddde;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.hamburger-item.bp3-menu-item:hover,
+.hamburger-item-child.bp3-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hamburger-item.bp3-menu-item.expanded {
+  background: rgba(52, 152, 219, 0.1);
 }
 
 .hamburger-item-wrapper {
@@ -53,7 +78,7 @@
   flex-direction: column;
 }
 
-.hamburger-item {
+.hamburger-item.bp3-menu-item {
   text-align: left;
   padding: 10px 12px;
   border-radius: 8px;
@@ -99,9 +124,10 @@
   gap: 4px;
 }
 
-.hamburger-item-child {
+.hamburger-item-child.bp3-menu-item {
   text-align: left;
   padding: 8px 12px;
+  padding-left: 32px;
   border-radius: 6px;
   background: transparent;
   border: 1px solid transparent;

@@ -1,85 +1,24 @@
-.drawer-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* Blueprint Drawer customizations to match existing style */
+.custom-drawer.bp3-drawer {
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  z-index: 1001;
-  max-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
-.drawer.drawer-open {
-  transform: translateY(0);
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
+.custom-drawer .bp3-drawer-header {
+  background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px 24px;
 }
 
-.drawer-title {
-  margin: 0;
+.custom-drawer .bp3-drawer-header .bp3-heading {
   color: #3498db;
   font-size: 18px;
   font-weight: 600;
-}
-
-.drawer-close {
-  background: transparent;
-  border: none;
-  color: #dcddde;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.drawer-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-.drawer-close:active {
-  transform: scale(0.95);
+  margin: 0;
 }
 
 .drawer-content {
@@ -155,17 +94,16 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .drawer {
-    max-height: 70vh;
+  .custom-drawer.bp3-drawer {
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
   }
 
-  .drawer-header {
+  .custom-drawer .bp3-drawer-header {
     padding: 16px 20px;
   }
 
-  .drawer-title {
+  .custom-drawer .bp3-drawer-header .bp3-heading {
     font-size: 16px;
   }
 

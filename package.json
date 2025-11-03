@@ -37,6 +37,8 @@
     "webpack-dev-server": "^4.15.2"
   },
   "dependencies": {
+    "@blueprintjs/core": "^6.3.2",
+    "@blueprintjs/icons": "^6.2.0",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "@types/react": "^19.2.2",

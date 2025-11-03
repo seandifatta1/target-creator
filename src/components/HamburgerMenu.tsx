@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { useState } from 'react';
+import { Menu, MenuItem, MenuDivider, Icon, Collapse, Button } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import './HamburgerMenu.css';
 
@@ -53,8 +55,10 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
 
     return (
       <div key={item.id} className="hamburger-item-wrapper">
-        <button
+        <MenuItem
           className={`hamburger-item ${isExpanded ? 'expanded' : ''}`}
+          text={item.label}
+          icon={item.icon && React.isValidElement(item.icon) ? item.icon : item.icon && typeof item.icon === 'string' ? <span>{item.icon}</span> : undefined}
           onClick={() => {
             if (hasChildren) {
               toggleExpanded(item.id);
@@ -62,18 +66,16 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
               item.onClick?.();
             }
           }}
-        >
-          <span className="hamburger-item-label">{item.label}</span>
-          {hasChildren && (
-            <span className="hamburger-item-arrow">{isExpanded ? '▼' : '▶'}</span>
-          )}
-        </button>
-        {hasChildren && isExpanded && (
-          <div className="hamburger-item-children">
-            {item.children!.map(child => (
-              <DraggableTargetItem key={child.id} item={child} />
-            ))}
-          </div>
+          labelElement={hasChildren ? <Icon icon={isExpanded ? IconNames.CHEVRON_DOWN : IconNames.CHEVRON_RIGHT} /> : undefined}
+        />
+        {hasChildren && (
+          <Collapse isOpen={isExpanded}>
+            <div className="hamburger-item-children">
+              {item.children!.map(child => (
+                <DraggableTargetItem key={child.id} item={child} />
+              ))}
+            </div>
+          </Collapse>
         )}
       </div>
     );
@@ -90,7 +92,9 @@ const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
             {header && <div className="hamburger-header">{header}</div>}
 
             <nav className="hamburger-nav">
-              {items.map(item => renderItem(item))}
+              <Menu className="hamburger-menu">
+                {items.map(item => renderItem(item))}
+              </Menu>
             </nav>
 
             {footer && <div className="hamburger-footer">{footer}</div>}
@@ -116,19 +120,17 @@ const DraggableTargetItem: React.FC<{ item: HamburgerMenuItem }> = ({ item }) =>
   };
 
   return (
-    <button
+    <MenuItem
       className={`hamburger-item-child ${itemIsDragging ? 'dragging' : ''}`}
+      text={item.label}
+      icon={item.icon && React.isValidElement(item.icon) ? item.icon : item.icon && typeof item.icon === 'string' ? <span>{item.icon}</span> : undefined}
       onClick={(e) => {
         if (!itemIsDragging && item.onClick) {
           item.onClick();
         }
       }}
       onMouseDown={handleMouseDown}
-      draggable={false}
-    >
-      {item.icon && <span className="hamburger-item-icon">{item.icon}</span>}
-      <span className="hamburger-item-label">{item.label}</span>
-    </button>
+    />
   );
 };
 

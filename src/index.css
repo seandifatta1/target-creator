@@ -1,0 +1,69 @@
+/* Blueprint.js CSS imports */
+@import "@blueprintjs/core/lib/css/blueprint.css";
+@import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+
+/* Custom color overrides to match existing theme */
+:root {
+  --bp3-intent-primary: #3498db;
+  --bp3-intent-success: #2ecc71;
+  --bp3-intent-warning: #f39c12;
+  --bp3-intent-danger: #e74c3c;
+}
+
+/* Dark theme customizations */
+.bp3-dark {
+  --bp3-text-color: #e2e8f0;
+  --bp3-heading-color: #3498db;
+  --bp3-text-muted-color: #94a3b8;
+}
+
+/* Custom button styling to maintain existing color scheme */
+.settings-fab.bp3-button {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  border: none;
+  box-shadow: 0 4px 16px rgba(155, 89, 182, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.settings-fab.bp3-button:hover {
+  background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+  box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.settings-fab.bp3-button.bp3-minimal {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+}
+
+.annotation-close.bp3-button.bp3-minimal,
+.drawer-close.bp3-button.bp3-minimal,
+.close-button.bp3-button.bp3-minimal {
+  background: transparent;
+  border: none;
+  color: #dcddde;
+}
+
+.annotation-close.bp3-button.bp3-minimal:hover,
+.drawer-close.bp3-button.bp3-minimal:hover,
+.close-button.bp3-button.bp3-minimal:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.cancel-button.bp3-button,
+.save-button.bp3-button {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.save-button.bp3-button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.save-button.bp3-button:hover {
+  background: linear-gradient(135deg, #2980b9 0%, #1f5f8b 100%);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+

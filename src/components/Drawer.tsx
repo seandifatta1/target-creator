@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Drawer as BPDrawer, Button, Icon } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import './Drawer.css';
 
 export interface DrawerProps {
@@ -10,33 +12,21 @@ export interface DrawerProps {
 
 const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, children, title }) => {
   return (
-    <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="drawer-backdrop" 
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
-      
-      {/* Drawer */}
-      <div className={`drawer ${isOpen ? 'drawer-open' : ''}`}>
-        <div className="drawer-header">
-          {title && <h3 className="drawer-title">{title}</h3>}
-          <button 
-            className="drawer-close"
-            onClick={onClose}
-            aria-label="Close drawer"
-          >
-            ×
-          </button>
-        </div>
-        <div className="drawer-content">
-          {children}
-        </div>
+    <BPDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      position="bottom"
+      size="60vh"
+      className="custom-drawer"
+      icon={title ? undefined : <Icon icon={IconNames.MENU_CLOSED} />}
+      title={title}
+      canOutsideClickClose
+      canEscapeKeyClose
+    >
+      <div className="drawer-content">
+        {children}
       </div>
-    </>
+    </BPDrawer>
   );
 };
 

@@ -3,6 +3,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import { Button, Icon } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
 import Target from './Target';
@@ -566,13 +568,14 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
   return (
     <div className="infinite-grid-container">
       {/* Settings FAB */}
-      <button 
+      <Button
         className="settings-fab"
         onClick={() => setIsSettingsOpen(true)}
         aria-label="Settings"
-      >
-        <span className="settings-fab-icon">⚙️</span>
-      </button>
+        icon={<Icon icon={IconNames.COG} size={24} />}
+        minimal
+        large
+      />
 
       {/* Controls overlay */}
       <div className="grid-controls">
@@ -589,9 +592,12 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
         )}
         <p>Use mouse to orbit, zoom, and pan</p>
         <div className="control-buttons">
-          <button onClick={() => setCameraPosition([15, 15, 15])}>
+          <Button 
+            onClick={() => setCameraPosition([15, 15, 15])}
+            intent="primary"
+          >
             Reset Camera
-          </button>
+          </Button>
         </div>
       </div>
 
