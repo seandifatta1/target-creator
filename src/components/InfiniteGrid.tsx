@@ -3,7 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
-import { Button, Icon, Collapse } from '@blueprintjs/core';
+import { Button, Icon, Collapse, Menu, MenuItem } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import SettingsModal, { CoordinateSettings, CoordinateSystem } from './SettingsModal';
 import CoordinateAxes from './CoordinateAxes';
@@ -138,7 +138,9 @@ const InfiniteGrid: React.FC<{
   coordinateRegistry?: ICoordinateRegistry;
   relationshipManager?: IRelationshipManager;
   onCoordinatesChange?: (coordinates: Array<{ id: string; position: [number, number, number]; name?: string }>) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange }) => {
+  onContextMenuRequest?: (state: { isOpen: boolean; position: [number, number, number] | null; menuPosition: { x: number; y: number } | null }) => void;
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest }) => {
+  const { gl } = useThree();
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
@@ -273,6 +275,52 @@ const InfiniteGrid: React.FC<{
     
     onPlacedObjectsChange([...placedObjects, newObject]);
   }, [placedPaths, placedObjects, onPlacedObjectsChange, onSelectItem]);
+
+  // Track mouse position globally (same approach as DragTooltip)
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const pos = { x: e.clientX, y: e.clientY };
+      setMousePosition(pos);
+      mousePositionRef.current = pos;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    // Also capture on contextmenu to get exact right-click position
+    const handleContextMenu = (e: MouseEvent) => {
+      const pos = { x: e.clientX, y: e.clientY };
+      mousePositionRef.current = pos;
+    };
+    
+    window.addEventListener('contextmenu', handleContextMenu);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
+
+  // Handle context menu for grid points
+  const handleGridPointContextMenu = useCallback((e: any, position: [number, number, number]) => {
+    e.stopPropagation();
+    
+    // Use the ref position (captured on contextmenu event) - same logic as target tooltip
+    const clientX = mousePositionRef.current.x || mousePosition.x;
+    const clientY = mousePositionRef.current.y || mousePosition.y;
+    
+    // Notify parent to open context menu at actual click position
+    if (onContextMenuRequest) {
+      onContextMenuRequest({
+        isOpen: true,
+        position: position,
+        menuPosition: { x: clientX, y: clientY }
+      });
+    }
+  }, [mousePosition, onContextMenuRequest]);
+
 
   // Handle drop
   useEffect(() => {
@@ -442,16 +490,7 @@ const InfiniteGrid: React.FC<{
             onClick={() => {
               handleGridPointClick(position);
             }}
-            onContextMenu={(e) => {
-              e.stopPropagation();
-              onOpenNamingModal({
-                isOpen: true,
-                itemType: 'coordinate',
-                itemId: `coord_${position[0]}_${position[1]}_${position[2]}`,
-                currentName: undefined,
-                itemLabel: `[${position[0]}, ${position[1]}, ${position[2]}]`
-              });
-            }}
+            onContextMenu={(e) => handleGridPointContextMenu(e, position)}
             isPermanentlyLit={isLitByPath}
             isHovered={isHovered}
             onPointerOver={() => setHoveredGridPoint(position)}
@@ -863,6 +902,17 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
     itemId: '',
   });
 
+  // Context menu state
+  const [contextMenuState, setContextMenuState] = useState<{
+    isOpen: boolean;
+    position: [number, number, number] | null;
+    menuPosition: { x: number; y: number } | null;
+  }>({
+    isOpen: false,
+    position: null,
+    menuPosition: null
+  });
+
   const handleToggleAnnotation = useCallback((id: string) => {
     setOpenAnnotations(prev => {
       const newSet = new Set(prev);
@@ -880,6 +930,66 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
     // Here you could implement coordinate system conversion logic
     console.log('Coordinate system changed to:', newSettings);
   }, []);
+
+  // Context menu handlers
+  const handleAddTargetFromMenu = useCallback((position: [number, number, number]) => {
+    const newObject = {
+      id: `obj_${Date.now()}`,
+      position: position,
+      targetId: `target_${Date.now()}`,
+      targetLabel: 'Target',
+      iconEmoji: '🎯'
+    };
+    
+    // Register coordinate and create relationship
+    if (coordinateRegistry && relationshipManager) {
+      const coord = coordinateRegistry.getOrCreate(position);
+      relationshipManager.attachTargetToCoordinate(newObject.id, coord.id);
+      if (onCoordinatesChange) {
+        onCoordinatesChange(coordinateRegistry.getAll());
+      }
+    }
+    
+    setPlacedObjects([...placedObjects, newObject]);
+    // Open annotation for newly placed object
+    handleToggleAnnotation(newObject.id);
+    setContextMenuState({ isOpen: false, position: null, menuPosition: null });
+  }, [placedObjects, setPlacedObjects, handleToggleAnnotation, coordinateRegistry, relationshipManager, onCoordinatesChange]);
+
+  const handleStartPathFromMenu = useCallback((position: [number, number, number], pathType: string = 'path-line', pathLabel: string = 'Line') => {
+    const newPath = {
+      id: `path_${Date.now()}`,
+      points: [],
+      pathType: pathType,
+      pathLabel: pathLabel,
+      name: undefined,
+      litTiles: [position]
+    };
+    
+    // Register coordinates and create relationships
+    if (coordinateRegistry && relationshipManager) {
+      const coord = coordinateRegistry.getOrCreate(position);
+      relationshipManager.attachPathToCoordinates(newPath.id, [coord.id]);
+      if (onCoordinatesChange) {
+        onCoordinatesChange(coordinateRegistry.getAll());
+      }
+    }
+    
+    setPlacedPaths([...placedPaths, newPath]);
+    setContextMenuState({ isOpen: false, position: null, menuPosition: null });
+  }, [placedPaths, setPlacedPaths, coordinateRegistry, relationshipManager, onCoordinatesChange]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    if (!contextMenuState.isOpen) return;
+    
+    const handleClick = () => {
+      setContextMenuState({ isOpen: false, position: null, menuPosition: null });
+    };
+    
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [contextMenuState.isOpen]);
 
   const handleNameSave = useCallback((name: string) => {
     if (namingModal.itemType === 'target') {
@@ -1039,6 +1149,7 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           coordinateRegistry={coordinateRegistry}
           relationshipManager={relationshipManager}
           onCoordinatesChange={onCoordinatesChange}
+          onContextMenuRequest={setContextMenuState}
         />
         <OrbitControlsWrapper 
           waitingForPathEndpoint={!!waitingForPathEndpoint}
@@ -1075,6 +1186,61 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
         itemType={namingModal.itemType}
         itemLabel={namingModal.itemLabel}
       />
+
+      {/* Context Menu - positioned directly like DragTooltip */}
+      {contextMenuState.isOpen && contextMenuState.position && contextMenuState.menuPosition && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${contextMenuState.menuPosition.x + 15}px`,
+            top: `${contextMenuState.menuPosition.y + 15}px`,
+            pointerEvents: 'auto',
+            zIndex: 1000,
+          }}
+        >
+          <Menu className="grid-context-menu">
+            <MenuItem
+              icon="target"
+              text="Add Target"
+              onClick={() => {
+                if (contextMenuState.position) {
+                  handleAddTargetFromMenu(contextMenuState.position);
+                }
+              }}
+            />
+            <MenuItem
+              icon="path-search"
+              text="Start Path"
+            >
+              <MenuItem
+                icon="path-search"
+                text="Line"
+                onClick={() => {
+                  if (contextMenuState.position) {
+                    handleStartPathFromMenu(contextMenuState.position, 'path-line', 'Line');
+                  }
+                }}
+              />
+            </MenuItem>
+            <MenuItem
+              icon="edit"
+              text="Name Coordinate"
+              onClick={() => {
+                if (contextMenuState.position) {
+                  setNamingModal({
+                    isOpen: true,
+                    itemType: 'coordinate',
+                    itemId: `coord_${contextMenuState.position[0]}_${contextMenuState.position[1]}_${contextMenuState.position[2]}`,
+                    currentName: undefined,
+                    itemLabel: `[${contextMenuState.position[0]}, ${contextMenuState.position[1]}, ${contextMenuState.position[2]}]`
+                  });
+                  setContextMenuState({ isOpen: false, position: null, menuPosition: null });
+                }
+              }}
+            />
+          </Menu>
+        </div>
+      )}
     </div>
   );
 };
