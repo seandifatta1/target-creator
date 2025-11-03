@@ -619,13 +619,23 @@ const InfiniteGrid: React.FC<{
       {/* Render paths as thick white lines connecting lit tiles */}
       {placedPaths.map((path) => {
         // Validate path has lit tiles
-        if (!path || !path.litTiles || path.litTiles.length === 0) {
+        if (!path || !path.litTiles || !Array.isArray(path.litTiles) || path.litTiles.length === 0) {
+          return null;
+        }
+        
+        // Filter out any invalid tiles
+        const validTiles = path.litTiles.filter(tile => 
+          tile && Array.isArray(tile) && tile.length === 3 &&
+          Number.isFinite(tile[0]) && Number.isFinite(tile[1]) && Number.isFinite(tile[2])
+        );
+        
+        if (validTiles.length === 0) {
           return null;
         }
         
         // If only one tile, render a small sphere at that position
-        if (path.litTiles.length === 1) {
-          const tile = path.litTiles[0];
+        if (validTiles.length === 1) {
+          const tile = validTiles[0];
           const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
           
           return (
@@ -669,6 +679,11 @@ const InfiniteGrid: React.FC<{
         }
         
         // Multiple tiles: connect them with lines
+        // Ensure we have at least 2 valid tiles for line rendering
+        if (validTiles.length < 2) {
+          return null;
+        }
+        
         // Create lines between consecutive tiles
         const lines: React.ReactNode[] = [];
         const clickableBoxes: React.ReactNode[] = [];
@@ -676,18 +691,58 @@ const InfiniteGrid: React.FC<{
         const lineColor = isSelected ? "#00ff00" : "#ffffff";
         const lineWidth = isSelected ? 8 : 6;
         
-        for (let i = 0; i < path.litTiles.length - 1; i++) {
-          const start = path.litTiles[i];
-          const end = path.litTiles[i + 1];
+        for (let i = 0; i < validTiles.length - 1; i++) {
+          const start = validTiles[i];
+          const end = validTiles[i + 1];
+          
+          // Validate points before creating line
+          if (!start || !end || 
+              !Array.isArray(start) || !Array.isArray(end) ||
+              start.length !== 3 || end.length !== 3 ||
+              !Number.isFinite(start[0]) || !Number.isFinite(start[1]) || !Number.isFinite(start[2]) ||
+              !Number.isFinite(end[0]) || !Number.isFinite(end[1]) || !Number.isFinite(end[2])) {
+            console.warn(`Invalid path segment at index ${i} for path ${path.id}`, { start, end });
+            continue;
+          }
           
           // Create line between tiles
+          const startVec = new THREE.Vector3(start[0], start[1] + 0.5, start[2]);
+          const endVec = new THREE.Vector3(end[0], end[1] + 0.5, end[2]);
+          
+          // Ensure vectors are valid (check if components are finite)
+          if (!Number.isFinite(startVec.x) || !Number.isFinite(startVec.y) || !Number.isFinite(startVec.z) ||
+              !Number.isFinite(endVec.x) || !Number.isFinite(endVec.y) || !Number.isFinite(endVec.z)) {
+            console.warn(`Invalid vector for path segment at index ${i} for path ${path.id}`);
+            continue;
+          }
+          
+          // Ensure start and end vectors are different (Line component requires distinct points)
+          if (startVec.distanceTo(endVec) < 0.001) {
+            console.warn(`Start and end vectors are too close for path segment at index ${i} for path ${path.id}`);
+            continue;
+          }
+          
+          // Convert Vector3 to tuples for Line component (drei Line expects tuples or Vector3, but tuples are safer)
+          const linePoints: [number, number, number][] = [
+            [startVec.x, startVec.y, startVec.z],
+            [endVec.x, endVec.y, endVec.z]
+          ];
+          
+          // Final validation: ensure all values are finite
+          const isValidLine = linePoints.every(p => 
+            Array.isArray(p) && p.length === 3 && 
+            p.every(coord => Number.isFinite(coord))
+          );
+          
+          if (!isValidLine) {
+            console.warn(`Invalid line points for path segment at index ${i} for path ${path.id}`, linePoints);
+            continue;
+          }
+          
           lines.push(
             <Line
               key={`line-${path.id}-${i}`}
-              points={[
-                new THREE.Vector3(start[0], start[1] + 0.5, start[2]),
-                new THREE.Vector3(end[0], end[1] + 0.5, end[2])
-              ]}
+              points={linePoints}
               color={lineColor}
               lineWidth={lineWidth}
             />
@@ -743,6 +798,12 @@ const InfiniteGrid: React.FC<{
               <meshStandardMaterial transparent opacity={0} />
             </Box>
           );
+        }
+        
+        // Only render if we have valid lines
+        if (lines.length === 0) {
+          console.warn(`Path ${path.id} has no valid line segments after validation`, { validTiles, path });
+          return null;
         }
         
         return (
@@ -1106,6 +1167,13 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
     const [startX, startY, startZ] = start;
     const [endX, endY, endZ] = end;
     
+    // Validate inputs
+    if (!Number.isFinite(startX) || !Number.isFinite(startY) || !Number.isFinite(startZ) ||
+        !Number.isFinite(endX) || !Number.isFinite(endY) || !Number.isFinite(endZ)) {
+      console.warn('Invalid start or end position for line calculation', { start, end });
+      return [start, end]; // Return at least start and end
+    }
+    
     const points: Array<[number, number, number]> = [];
     const dx = endX - startX;
     const dz = endZ - startZ;
@@ -1118,16 +1186,51 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
       return [start];
     }
     
+    // Ensure steps is at least 1 to avoid division by zero
+    const safeSteps = Math.max(1, steps);
+    
     // Interpolate between start and end
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
+    for (let i = 0; i <= safeSteps; i++) {
+      const t = safeSteps > 0 ? i / safeSteps : 0;
       const x = Math.round(startX + dx * t);
       const z = Math.round(startZ + dz * t);
       const y = 0; // Grid is on y=0 plane
-      points.push([x, y, z]);
+      
+      // Validate calculated point
+      if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+        points.push([x, y, z]);
+      }
     }
     
-    return points;
+    // Ensure we have at least start and end points
+    if (points.length === 0) {
+      return [start, end];
+    }
+    
+    // Ensure start and end are included
+    const hasStart = points.some(p => p[0] === startX && p[1] === startY && p[2] === startZ);
+    const hasEnd = points.some(p => p[0] === endX && p[1] === endY && p[2] === endZ);
+    
+    if (!hasStart) points.unshift(start);
+    if (!hasEnd) points.push(end);
+    
+    // Deduplicate consecutive identical points to avoid Line component errors
+    const deduplicated: Array<[number, number, number]> = [];
+    for (let i = 0; i < points.length; i++) {
+      const current = points[i];
+      const prev = deduplicated[deduplicated.length - 1];
+      
+      if (!prev || prev[0] !== current[0] || prev[1] !== current[1] || prev[2] !== current[2]) {
+        deduplicated.push(current);
+      }
+    }
+    
+    // Ensure we have at least 2 points for a valid line
+    if (deduplicated.length < 2) {
+      return [start, end];
+    }
+    
+    return deduplicated;
   }, []);
 
   // Handle path creation completion
