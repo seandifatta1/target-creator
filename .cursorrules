@@ -7,6 +7,11 @@ Cursor should:
 - Use Blueprint.js components and styling where relevant (use other libraries like three.js for canvas where relevant).
 - Follow ESLint and Prettier conventions.
 
+# Documentation Files
+- By default, DO NOT create .md files. Reply with text explanations instead.
+- Only create .md files if explicitly requested by the user OR if the content would be significantly better served as documentation (e.g., comprehensive setup guides, API documentation, complex architecture diagrams).
+- If you think a .md file might be appropriate, PROMPT the user first before creating it.
+
 # File organization
 - Put hooks in /src/hooks
 - Put reusable UI in /src/components
@@ -20,4 +25,9 @@ Cursor should:
 # Modularity & Stories
 - Prioritize modularity via dependency injection (DI) for components and utilities.
 - Any new component should also include a colocated Storybook story.
+
+# Testing
+- Any new component should have a corresponding Jest test file in the same folder.
+- Test files should be named `<component-name>_test.tsx` (or `_test.ts` for non-component files).
+- Test files should include basic test structure but can start empty/stubbed.
 

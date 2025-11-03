@@ -13,6 +13,11 @@ const config: StorybookConfig = {
   "framework": {
     "name": "@storybook/react-webpack5",
     "options": {}
+  },
+  webpackFinal: async (config) => {
+    // Enable source maps for debugging
+    config.devtool = 'eval-source-map';
+    return config;
   }
 };
 export default config;

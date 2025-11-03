@@ -14,6 +14,7 @@ export interface TargetProps {
   onToggleAnnotation: (id: string) => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
+  onClick?: () => void;
 }
 
 // Annotation component for targets
@@ -85,7 +86,8 @@ const Target: React.FC<TargetProps> = ({
   isAnnotationOpen,
   onToggleAnnotation,
   onPointerOver,
-  onPointerOut
+  onPointerOut,
+  onClick
 }) => {
   // Position icon slightly above the grid point (0.5 units up)
   const iconPosition: [number, number, number] = [position[0], position[1] + 0.5, position[2]];
@@ -106,6 +108,12 @@ const Target: React.FC<TargetProps> = ({
           }
         }}
         onPointerOut={onPointerOut}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onClick) {
+            onClick();
+          }
+        }}
       >
         {iconEmoji}
       </Text>

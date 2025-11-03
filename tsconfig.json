@@ -11,7 +11,10 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "inlineSourceMap": false,
+    "inlineSources": true
   },
   "include": ["src/**/*"],
   "exclude": [
@@ -19,6 +22,8 @@
     "dist",
     "src/**/*.stories.ts",
     "src/**/*.stories.tsx",
+    "src/**/*_test.ts",
+    "src/**/*_test.tsx",
     "src/stories/**"
   ]
 }

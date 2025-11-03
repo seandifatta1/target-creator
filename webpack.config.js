@@ -7,11 +7,11 @@ module.exports = {
   target: 'web',
   module: {
     rules: [
-      {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: [/node_modules/, /\.stories\.tsx?$/, /src\/stories\//],
-      },
+            {
+              test: /\.tsx?$/,
+              use: 'ts-loader',
+              exclude: [/node_modules/, /\.stories\.tsx?$/, /src\/stories\//, /_test\.tsx?$/],
+            },
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
