@@ -117,19 +117,25 @@ const App: React.FC = () => {
                     <span className="detail-value">{selectedItem.label}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Points:</span>
+                    <span className="detail-label">Lit Tiles:</span>
                     <span className="detail-value">{selectedItem.points.length}</span>
                   </div>
                   <div className="detail-section" style={{ marginTop: '16px' }}>
-                    <h4>Point Coordinates</h4>
-                    {selectedItem.points.map((point, index) => (
-                      <div key={index} className="detail-row">
-                        <span className="detail-label">Point {index + 1}:</span>
-                        <span className="detail-value">
-                          [{point[0]}, {point[1]}, {point[2]}]
-                        </span>
+                    <h4>Lit Tile Coordinates</h4>
+                    {selectedItem.points.length > 0 ? (
+                      selectedItem.points.map((point, index) => (
+                        <div key={index} className="detail-row">
+                          <span className="detail-label">Tile {index + 1}:</span>
+                          <span className="detail-value">
+                            [{point[0]}, {point[1]}, {point[2]}]
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="detail-row">
+                        <span className="detail-value">No tiles lit</span>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </>
