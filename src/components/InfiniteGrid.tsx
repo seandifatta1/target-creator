@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Box, Sphere, Line } from '@react-three/drei';
+import { OrbitControls, Grid, Box, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import { Button, Icon, Collapse, Menu, MenuItem, OverlayToaster, Toast } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
@@ -722,49 +722,62 @@ const InfiniteGrid: React.FC<{
             continue;
           }
           
-          // Convert Vector3 to tuples for Line component (drei Line expects tuples or Vector3, but tuples are safer)
-          const linePoints: [number, number, number][] = [
-            [startVec.x, startVec.y, startVec.z],
-            [endVec.x, endVec.y, endVec.z]
-          ];
-          
-          // Final validation: ensure all values are finite
-          const isValidLine = linePoints.every(p => 
-            Array.isArray(p) && p.length === 3 && 
-            p.every(coord => Number.isFinite(coord))
+          // Calculate line segment properties for Box geometry
+          const segmentLength = startVec.distanceTo(endVec);
+          const midpoint = new THREE.Vector3(
+            (startVec.x + endVec.x) / 2,
+            (startVec.y + endVec.y) / 2,
+            (startVec.z + endVec.z) / 2
           );
           
-          if (!isValidLine) {
-            console.warn(`Invalid line points for path segment at index ${i} for path ${path.id}`, linePoints);
-            continue;
+          // Calculate rotation to align box with line direction
+          const direction = new THREE.Vector3().subVectors(endVec, startVec).normalize();
+          const lineThickness = 0.4; // 50% of block width (0.8 * 0.5 = 0.4)
+          
+          // Calculate rotation to align Box's Y-axis with line direction
+          // Box default extends along Y-axis, so we need to rotate it
+          const yAxis = new THREE.Vector3(0, 1, 0);
+          const rotationAxis = new THREE.Vector3().crossVectors(yAxis, direction);
+          const rotationAxisLength = rotationAxis.length();
+          
+          let rotation: [number, number, number] = [0, 0, 0];
+          
+          if (rotationAxisLength > 0.001) {
+            // Normalize the rotation axis
+            rotationAxis.normalize();
+            const angle = Math.acos(Math.max(-1, Math.min(1, yAxis.dot(direction))));
+            
+            // Convert axis-angle to Euler angles
+            const quat = new THREE.Quaternion().setFromAxisAngle(rotationAxis, angle);
+            const euler = new THREE.Euler().setFromQuaternion(quat);
+            
+            // Extract rotation as array to avoid readonly property issues
+            rotation = [euler.x, euler.y, euler.z];
+          } else if (direction.y < -0.999) {
+            // Special case: direction is opposite to Y-axis
+            rotation = [Math.PI, 0, 0];
           }
           
+          // Use Box geometry instead of Line for precise thickness control
           lines.push(
-            <Line
+            <Box
               key={`line-${path.id}-${i}`}
-              points={linePoints}
-              color={lineColor}
-              lineWidth={lineWidth}
-            />
+              position={[midpoint.x, midpoint.y, midpoint.z]}
+              args={[lineThickness, segmentLength, lineThickness]}
+              rotation={rotation}
+            >
+              <meshStandardMaterial color={lineColor} />
+            </Box>
           );
           
-          // Create clickable box for this segment
-          const midpoint = new THREE.Vector3(
-            (start[0] + end[0]) / 2,
-            (start[1] + end[1]) / 2 + 0.5,
-            (start[2] + end[2]) / 2
-          );
-          const length = new THREE.Vector3(
-            end[0] - start[0],
-            end[1] - start[1],
-            end[2] - start[2]
-          ).length();
+          // Create clickable box for this segment (using same midpoint, but offset Y by 0.5)
+          const clickableMidpoint = new THREE.Vector3(midpoint.x, midpoint.y + 0.5, midpoint.z);
           
           clickableBoxes.push(
             <Box
               key={`box-${path.id}-${i}`}
-              position={[midpoint.x, midpoint.y, midpoint.z]}
-              args={[Math.max(length, 0.8), 0.8, 0.8]}
+              position={[clickableMidpoint.x, clickableMidpoint.y, clickableMidpoint.z]}
+              args={[Math.max(segmentLength, 0.8), 0.8, 0.8]}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectItem({
