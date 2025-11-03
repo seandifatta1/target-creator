@@ -21,18 +21,20 @@ const GridPoint: React.FC<{
   onClick: () => void;
   onContextMenu?: (e: any) => void;
   isPermanentlyLit?: boolean;
-}> = ({ position, onClick, onContextMenu, isPermanentlyLit = false }) => {
+  isHovered?: boolean;
+  onPointerOver?: () => void;
+  onPointerOut?: () => void;
+}> = ({ position, onClick, onContextMenu, isPermanentlyLit = false, isHovered = false, onPointerOver, onPointerOut }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.scale.setScalar(hovered ? 1.2 : 1);
+      meshRef.current.scale.setScalar(isHovered ? 1.2 : 1);
     }
   });
 
   // Determine color: permanently lit (red), hovered (red), or default (blue)
-  const color = isPermanentlyLit || hovered ? "#ff6b6b" : "#4c9eff";
+  const color = isPermanentlyLit || isHovered ? "#ff6b6b" : "#4c9eff";
 
   return (
     <Box
@@ -46,8 +48,18 @@ const GridPoint: React.FC<{
           onContextMenu(e);
         }
       }}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        if (onPointerOver) {
+          onPointerOver();
+        }
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        if (onPointerOut) {
+          onPointerOut();
+        }
+      }}
     >
       <meshStandardMaterial 
         color={color}
@@ -131,6 +143,7 @@ const InfiniteGrid: React.FC<{
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
+  const [hoveredGridPoint, setHoveredGridPoint] = useState<[number, number, number] | null>(null);
   const { isDragging, dragData, snapPoint, updateSnapPoint, endDrag } = useDragTargetContext();
 
   // Create a combined snap point (commented out path endpoint logic)
@@ -353,6 +366,12 @@ const InfiniteGrid: React.FC<{
     }
   }, [isDragging, endDrag, onToggleAnnotation, onWaitingForPathEndpointChange, placedObjects, placedPaths, onPlacedObjectsChange, onPlacedPathsChange]);
 
+  // Helper function to check if two positions are equal
+  const positionsEqual = (pos1: [number, number, number], pos2: [number, number, number] | null): boolean => {
+    if (!pos2) return false;
+    return pos1[0] === pos2[0] && pos1[1] === pos2[1] && pos1[2] === pos2[2];
+  };
+
   const generateGridPoints = () => {
     const points: Array<[number, number, number]> = [];
     
@@ -413,6 +432,9 @@ const InfiniteGrid: React.FC<{
           )
         );
         
+        // Check if this grid point is currently hovered
+        const isHovered = positionsEqual(position, hoveredGridPoint);
+        
         return (
           <GridPoint
             key={`${position[0]}-${position[2]}`}
@@ -431,6 +453,9 @@ const InfiniteGrid: React.FC<{
               });
             }}
             isPermanentlyLit={isLitByPath}
+            isHovered={isHovered}
+            onPointerOver={() => setHoveredGridPoint(position)}
+            onPointerOut={() => setHoveredGridPoint(null)}
           />
         );
       })}
