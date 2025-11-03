@@ -1,11 +1,10 @@
 import * as React from 'react';
-import { Line, Box } from '@react-three/drei';
+import { Line, Box, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface PathProps {
   id: string;
-  start: [number, number, number];
-  end: [number, number, number];
+  points: [number, number, number][]; // Array of points - can be single or multiple
   pathType: string;
   pathLabel: string;
   color?: string;
@@ -15,51 +14,78 @@ export interface PathProps {
 
 const Path: React.FC<PathProps> = ({
   id,
-  start,
-  end,
+  points,
   pathType,
   pathLabel,
   color = "#3498db",
   lineWidth = 3,
   onClick
 }) => {
-  // Validate that both start and end points are valid 3-element arrays
-  if (!start || !end || 
-      start.length !== 3 || end.length !== 3 ||
-      !start.every(coord => typeof coord === 'number') ||
-      !end.every(coord => typeof coord === 'number')) {
+  // Validate points array
+  if (!points || points.length === 0 || 
+      !points.every(point => 
+        point && point.length === 3 && 
+        point.every(coord => typeof coord === 'number')
+      )) {
     return null;
   }
 
-  // Calculate midpoint for clickable area
-  const midpoint = new THREE.Vector3(
-    (start[0] + end[0]) / 2,
-    (start[1] + end[1]) / 2,
-    (start[2] + end[2]) / 2
-  );
-  
-  // Calculate length for box
-  const length = new THREE.Vector3(
-    end[0] - start[0],
-    end[1] - start[1],
-    end[2] - start[2]
-  ).length();
+  // Single point: render as a sphere
+  if (points.length === 1) {
+    const point = points[0];
+    return (
+      <group>
+        <Sphere
+          position={[point[0], point[1], point[2]]}
+          args={[0.3, 16, 16]}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) {
+              onClick();
+            }
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'auto';
+          }}
+        >
+          <meshStandardMaterial color={color} />
+        </Sphere>
+      </group>
+    );
+  }
 
-  return (
-    <group>
-      <Line
-        key={id}
-        points={[
-          new THREE.Vector3(start[0], start[1], start[2]),
-          new THREE.Vector3(end[0], end[1], end[2])
-        ]}
-        color={color}
-        lineWidth={lineWidth}
-      />
-      {/* Invisible clickable box for path selection - larger area for easier clicking */}
+  // Multiple points: render lines connecting them and clickable boxes
+  // Ensure we have at least 2 points for Line component
+  if (points.length < 2) {
+    return null;
+  }
+
+  const clickableBoxes: React.ReactNode[] = [];
+  
+  for (let i = 0; i < points.length - 1; i++) {
+    const start = points[i];
+    const end = points[i + 1];
+    const midpoint = new THREE.Vector3(
+      (start[0] + end[0]) / 2,
+      (start[1] + end[1]) / 2,
+      (start[2] + end[2]) / 2
+    );
+    const length = new THREE.Vector3(
+      end[0] - start[0],
+      end[1] - start[1],
+      end[2] - start[2]
+    ).length();
+
+    clickableBoxes.push(
       <Box
+        key={`box-${i}`}
         position={[midpoint.x, midpoint.y, midpoint.z]}
-        args={[Math.max(length, 1), 1, 1]}
+        args={[Math.max(length, 0.5), 0.5, 0.5]}
         onClick={(e) => {
           e.stopPropagation();
           if (onClick) {
@@ -77,6 +103,30 @@ const Path: React.FC<PathProps> = ({
       >
         <meshStandardMaterial transparent opacity={0} />
       </Box>
+    );
+  }
+
+  // Convert points to Vector3 for rendering (only if we have 2+ points)
+  // Double-check that we have valid points before rendering
+  const vectorPoints = points
+    .filter(p => p && Array.isArray(p) && p.length === 3 && p.every(coord => typeof coord === 'number' && !isNaN(coord)))
+    .map(p => new THREE.Vector3(p[0], p[1], p[2]));
+
+  // Final safety check - ensure we have at least 2 valid points
+  if (vectorPoints.length < 2) {
+    console.warn(`Path ${id} has insufficient valid points: ${vectorPoints.length}`, points);
+    return null;
+  }
+
+  return (
+    <group>
+      <Line
+        key={id}
+        points={vectorPoints}
+        color={color}
+        lineWidth={lineWidth}
+      />
+      {clickableBoxes}
     </group>
   );
 };

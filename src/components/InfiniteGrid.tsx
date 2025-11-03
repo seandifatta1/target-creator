@@ -95,16 +95,16 @@ const InfiniteGrid: React.FC<{
   coordinateSettings: CoordinateSettings;
   onHoveredObjectChange: (id: string | null) => void;
   onPlacedObjectsChange: (objects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>) => void;
-  onPlacedPathsChange: (paths: Array<{ id: string; start: [number, number, number]; end: [number, number, number]; pathType: string; pathLabel: string }>) => void;
+  onPlacedPathsChange: (paths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string }>) => void;
   placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
-  placedPaths: Array<{ id: string; start: [number, number, number]; end: [number, number, number]; pathType: string; pathLabel: string }>;
+  placedPaths: Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string }>;
   openAnnotations: Set<string>;
   onToggleAnnotation: (id: string) => void;
-  waitingForPathEndpoint: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null;
-  onWaitingForPathEndpointChange: (state: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null) => void;
+  waitingForPathEndpoint: { id: string; pathType: string; pathLabel: string } | null;
+  onWaitingForPathEndpointChange: (state: { id: string; pathType: string; pathLabel: string } | null) => void;
   onPathEndpointSnapPointChange: (point: [number, number, number] | null) => void;
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | null;
-  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; start: [number, number, number]; end: [number, number, number] } | null) => void;
+  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; points: [number, number, number][] } | null) => void;
 }> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem }) => {
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
@@ -147,25 +147,24 @@ const InfiniteGrid: React.FC<{
   }, [waitingForPathEndpoint, onWaitingForPathEndpointChange]);
 
   const handleGridPointClick = useCallback((position: [number, number, number]) => {
-    // If waiting for path endpoint, update the existing path's endpoint
+    // If waiting for path endpoint, add the point to the existing path
     if (waitingForPathEndpoint) {
-      // Validate position and start point
-      if (position && position.length === 3 && 
-          waitingForPathEndpoint.start && 
-          waitingForPathEndpoint.start.length === 3) {
-        // Update the existing path's endpoint
+      // Validate position
+      if (position && position.length === 3) {
+        // Add the new point to the existing path's points array
         const updatedPaths = placedPaths.map(path => {
           if (path.id === waitingForPathEndpoint.id) {
             return {
               ...path,
-              end: [position[0], position[1], position[2]] as [number, number, number]
+              points: [...path.points, [position[0], position[1], position[2]] as [number, number, number]]
             };
           }
           return path;
         });
         onPlacedPathsChange(updatedPaths);
+        // Continue waiting for more points (user can add as many as they want)
+        // Remove the waiting state only when they click elsewhere or press escape
       }
-      onWaitingForPathEndpointChange(null);
       return;
     }
 
@@ -190,25 +189,18 @@ const InfiniteGrid: React.FC<{
         if (result && result.snapPoint) {
           // Check if this is a path item
           if (result.dragData.id.startsWith('path-')) {
-            // For paths, immediately create a line with endpoint adjacent to start point
+            // For paths, create a path with start and end at the same point initially
             if (result.snapPoint && result.snapPoint.length === 3) {
-              const start: [number, number, number] = [
+              const point: [number, number, number] = [
                 result.snapPoint[0], 
                 result.snapPoint[1], 
                 result.snapPoint[2]
               ];
-              // Set endpoint to adjacent point (1 unit in +X direction)
-              const end: [number, number, number] = [
-                start[0] + 1,
-                start[1],
-                start[2]
-              ];
               
-              // Create the path immediately
+              // Create the path with start and end at the same point
               const newPath = {
                 id: `path_${Date.now()}`,
-                start: start,
-                end: end,
+                points: [point, point], // Start and end are the same initially
                 pathType: result.dragData.id,
                 pathLabel: result.dragData.label
               };
@@ -216,10 +208,9 @@ const InfiniteGrid: React.FC<{
               // Add path to state
               onPlacedPathsChange([...placedPaths, newPath]);
               
-              // Then enter mode to allow user to adjust endpoint if desired
+              // Then enter mode to allow user to add more points
               onWaitingForPathEndpointChange({
                 id: newPath.id,
-                start: start,
                 pathType: result.dragData.id,
                 pathLabel: result.dragData.label
               });
@@ -330,22 +321,22 @@ const InfiniteGrid: React.FC<{
       )}
 
       {/* Temporary path line preview while waiting for endpoint */}
-      {waitingForPathEndpoint && 
-       waitingForPathEndpoint.start && 
-       waitingForPathEndpoint.start.length === 3 && (() => {
-        // Use existing path's end if available, otherwise use snap point
+      {waitingForPathEndpoint && (() => {
+        // Use existing path's last point if available, otherwise use snap point
         const existingPath = placedPaths.find(p => p.id === waitingForPathEndpoint.id);
-        const previewEnd = existingPath?.end || pathEndpointSnapPoint;
+        const lastPoint = existingPath?.points[existingPath.points.length - 1];
+        const previewEnd = pathEndpointSnapPoint;
         
+        if (!lastPoint || lastPoint.length !== 3) return null;
         if (!previewEnd || previewEnd.length !== 3) return null;
         
         return (
           <Line
             points={[
               new THREE.Vector3(
-                waitingForPathEndpoint.start[0],
-                waitingForPathEndpoint.start[1],
-                waitingForPathEndpoint.start[2]
+                lastPoint[0],
+                lastPoint[1],
+                lastPoint[2]
               ),
               new THREE.Vector3(
                 previewEnd[0],
@@ -361,14 +352,19 @@ const InfiniteGrid: React.FC<{
 
       {/* Placed paths */}
       {placedPaths.map((path) => {
+        // Validate path before rendering
+        if (!path || !path.points || !Array.isArray(path.points) || path.points.length === 0) {
+          console.warn(`Invalid path data:`, path);
+          return null;
+        }
+        
         const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
         
         return (
           <Path
             key={path.id}
             id={path.id}
-            start={path.start}
-            end={path.end}
+            points={path.points}
             pathType={path.pathType}
             pathLabel={path.pathLabel}
             color={isSelected ? "#00ff00" : "#3498db"}
@@ -379,8 +375,7 @@ const InfiniteGrid: React.FC<{
                 id: path.id,
                 pathType: path.pathType,
                 label: path.pathLabel,
-                start: path.start,
-                end: path.end
+                points: path.points
               });
             }}
           />
@@ -481,7 +476,7 @@ const DragTooltip: React.FC<{
   hoveredObject: string | null;
   placedObjects: Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>;
   openAnnotations: Set<string>;
-  waitingForPathEndpoint: { id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null;
+  waitingForPathEndpoint: { id: string; pathType: string; pathLabel: string } | null;
 }> = ({ snapPoint, coordinateSettings, hoveredObject, placedObjects, openAnnotations, waitingForPathEndpoint }) => {
   const { isDragging, dragData } = useDragTargetContext();
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -544,7 +539,7 @@ const DragTooltip: React.FC<{
 // Main infinite grid canvas component
 interface InfiniteGridCanvasProps {
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | null;
-  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; start: [number, number, number]; end: [number, number, number] } | null) => void;
+  onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; points: [number, number, number][] } | null) => void;
 }
 
 const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, onSelectItem }) => {
@@ -558,9 +553,9 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ selectedItem, o
   });
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const [placedObjects, setPlacedObjects] = useState<Array<{ id: string; position: [number, number, number]; targetId: string; targetLabel: string; iconEmoji?: string }>>([]);
-  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; start: [number, number, number]; end: [number, number, number]; pathType: string; pathLabel: string }>>([]);
+  const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string }>>([]);
   const [openAnnotations, setOpenAnnotations] = useState<Set<string>>(new Set());
-  const [waitingForPathEndpoint, setWaitingForPathEndpoint] = useState<{ id: string; start: [number, number, number]; pathType: string; pathLabel: string } | null>(null);
+  const [waitingForPathEndpoint, setWaitingForPathEndpoint] = useState<{ id: string; pathType: string; pathLabel: string } | null>(null);
   const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
   const { snapPoint } = useDragTargetContext();
 

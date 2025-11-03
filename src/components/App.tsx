@@ -9,7 +9,7 @@ import './App.css';
 
 export type SelectedItem = 
   | { type: 'target'; id: string; targetId: string; label: string; position: [number, number, number]; iconEmoji?: string }
-  | { type: 'path'; id: string; pathType: string; label: string; start: [number, number, number]; end: [number, number, number] }
+  | { type: 'path'; id: string; pathType: string; label: string; points: [number, number, number][] }
   | null;
 
 const App: React.FC = () => {
@@ -117,16 +117,19 @@ const App: React.FC = () => {
                     <span className="detail-value">{selectedItem.label}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">Start:</span>
-                    <span className="detail-value">
-                      [{selectedItem.start[0]}, {selectedItem.start[1]}, {selectedItem.start[2]}]
-                    </span>
+                    <span className="detail-label">Points:</span>
+                    <span className="detail-value">{selectedItem.points.length}</span>
                   </div>
-                  <div className="detail-row">
-                    <span className="detail-label">End:</span>
-                    <span className="detail-value">
-                      [{selectedItem.end[0]}, {selectedItem.end[1]}, {selectedItem.end[2]}]
-                    </span>
+                  <div className="detail-section" style={{ marginTop: '16px' }}>
+                    <h4>Point Coordinates</h4>
+                    {selectedItem.points.map((point, index) => (
+                      <div key={index} className="detail-row">
+                        <span className="detail-label">Point {index + 1}:</span>
+                        <span className="detail-value">
+                          [{point[0]}, {point[1]}, {point[2]}]
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </>
