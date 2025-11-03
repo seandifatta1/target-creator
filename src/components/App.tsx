@@ -236,6 +236,45 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
+                  <h4>Coordinates</h4>
+                  {selectedItem.points.length > 0 ? (
+                    <div style={{ marginTop: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                            <th style={{ padding: '8px', textAlign: 'left', color: '#a8c7e8', fontWeight: '600' }}>X</th>
+                            <th style={{ padding: '8px', textAlign: 'left', color: '#a8c7e8', fontWeight: '600' }}>Y</th>
+                            <th style={{ padding: '8px', textAlign: 'left', color: '#a8c7e8', fontWeight: '600' }}>Z</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedItem.points.map((point, index) => (
+                            <tr 
+                              key={index} 
+                              style={{ 
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <td style={{ padding: '8px', textAlign: 'right', color: '#fff' }}>{point[0]}</td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: '#fff' }}>{point[1]}</td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: '#fff' }}>{point[2]}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p style={{ color: '#888', fontStyle: 'italic' }}>No coordinates available</p>
+                  )}
+                </div>
+                <div className="detail-section" style={{ marginTop: '20px' }}>
                   <h4>Relationships</h4>
                   {relationshipManager && selectedItem ? (() => {
                     const counts = relationshipManager.getRelationshipCounts('path', selectedItem.id);
