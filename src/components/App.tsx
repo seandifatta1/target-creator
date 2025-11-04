@@ -6,6 +6,9 @@ import Toolbar from './Toolbar';
 import HamburgerMenu, { HamburgerMenuItem } from './HamburgerMenu';
 import InfiniteGridCanvas from './InfiniteGrid';
 import Drawer from './Drawer';
+import ExportWizard from './ExportWizard';
+import ImportDialog from './ImportDialog';
+import SettingsModal, { CoordinateSettings } from './SettingsModal';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import { useCoordinateRegistry } from '../hooks/useCoordinateRegistry';
 import { useRelationshipManager } from '../hooks/useRelationshipManager';
@@ -33,6 +36,15 @@ const App: React.FC = () => {
   const [placedPaths, setPlacedPaths] = useState<Array<{ id: string; points: [number, number, number][]; pathType: string; pathLabel: string; name?: string; litTiles: [number, number, number][] }>>([]);
   const [coordinates, setCoordinates] = useState<Array<{ id: string; position: [number, number, number]; name?: string }>>([]);
   
+  // Dialog states
+  const [isExportWizardOpen, setIsExportWizardOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [coordinateSettings, setCoordinateSettings] = useState<CoordinateSettings>({
+    system: 'Cartesian',
+    minUnit: 0.1
+  });
+  
   // Business logic services
   const { registry: coordinateRegistry, getAll: getAllCoordinates, updateName: updateCoordinateName } = useCoordinateRegistry();
   const { manager: relationshipManager, getRelatedItems, getRelationshipCounts, attachTargetToCoordinate, attachPathToCoordinates, detachTargetFromCoordinate, detachPathFromCoordinate } = useRelationshipManager();
@@ -43,6 +55,83 @@ const App: React.FC = () => {
   }, [coordinateRegistry, coordinates.length]);
   
   const { isDragging } = useDragTargetContext();
+  
+  // Get selected item IDs for export
+  const getSelectedItemIds = () => {
+    if (!selectedItem) return { targets: [], paths: [], coordinates: [] };
+    
+    if (selectedItem.type === 'target') {
+      return { targets: [selectedItem.id], paths: [], coordinates: [] };
+    } else if (selectedItem.type === 'path') {
+      return { targets: [], paths: [selectedItem.id], coordinates: [] };
+    } else if (selectedItem.type === 'coordinate') {
+      return { targets: [], paths: [], coordinates: [selectedItem.id] };
+    }
+    return { targets: [], paths: [], coordinates: [] };
+  };
+  
+  // Handle import
+  const handleImport = (importData: any) => {
+    // Import targets
+    if (importData.targets && Array.isArray(importData.targets)) {
+      const newTargets = importData.targets.map((t: any) => ({
+        id: t.id || `obj_${Date.now()}_${Math.random()}`,
+        position: t.position || [0, 0, 0],
+        targetId: t.targetId || t.id || 'target',
+        targetLabel: t.targetLabel || t.label || 'Imported Target',
+        name: t.name,
+        iconEmoji: t.iconEmoji || '🎯'
+      }));
+      setPlacedObjects([...placedObjects, ...newTargets]);
+      
+      // Create relationships for imported targets
+      if (importData.relationships?.targetToCoordinate && relationshipManager) {
+        importData.relationships.targetToCoordinate.forEach((rel: any) => {
+          const target = newTargets.find(t => t.id === rel.targetId);
+          if (target) {
+            const coord = coordinateRegistry.getOrCreate(target.position);
+            relationshipManager.attachTargetToCoordinate(target.id, coord.id);
+          }
+        });
+      }
+    }
+    
+    // Import paths
+    if (importData.paths && Array.isArray(importData.paths)) {
+      const newPaths = importData.paths.map((p: any) => ({
+        id: p.id || `path_${Date.now()}_${Math.random()}`,
+        points: [],
+        pathType: p.pathType || 'path-line',
+        pathLabel: p.pathLabel || p.label || 'Imported Path',
+        name: p.name,
+        litTiles: p.litTiles || p.points || []
+      }));
+      setPlacedPaths([...placedPaths, ...newPaths]);
+      
+      // Create relationships for imported paths
+      if (importData.relationships?.pathToCoordinates && relationshipManager) {
+        importData.relationships.pathToCoordinates.forEach((rel: any) => {
+          const path = newPaths.find(p => p.id === rel.pathId);
+          if (path && rel.coordinateIds) {
+            const coordIds = rel.coordinateIds.map((coordId: string) => {
+              // Find or create coordinates
+              const coord = coordinates.find(c => c.id === coordId);
+              if (coord) return coord.id;
+              // If coordinate not found, create from path points
+              if (path.litTiles && path.litTiles.length > 0) {
+                return path.litTiles.map(pos => coordinateRegistry.getOrCreate(pos).id);
+              }
+              return [];
+            }).flat();
+            relationshipManager.attachPathToCoordinates(path.id, coordIds);
+          }
+        });
+      }
+    }
+    
+    // Update coordinates
+    setCoordinates([...coordinateRegistry.getAll()]);
+  };
 
   const leftMenuItems: HamburgerMenuItem[] = [
     { id: 'scenes', label: 'Scenes', onClick: () => console.log('Scenes clicked') },
@@ -77,6 +166,9 @@ const App: React.FC = () => {
         title="Target Creator"
         onMenuToggle={() => setIsLeftMenuOpen(!isLeftMenuOpen)}
         isMenuOpen={isLeftMenuOpen}
+        onExport={() => setIsExportWizardOpen(true)}
+        onImport={() => setIsImportDialogOpen(true)}
+        onSettings={() => setIsSettingsModalOpen(true)}
       />
       <div className="app-body">
         <HamburgerMenu
@@ -693,6 +785,33 @@ const App: React.FC = () => {
           setSelectedCoordinateId(id);
           setActiveTab('coordinates');
         }}
+      />
+      
+      {/* Export Wizard */}
+      <ExportWizard
+        isOpen={isExportWizardOpen}
+        onClose={() => setIsExportWizardOpen(false)}
+        targets={placedObjects}
+        paths={placedPaths}
+        coordinates={coordinates}
+        relationshipManager={relationshipManager}
+        coordinateSystem={coordinateSettings.system}
+        selectedItemIds={getSelectedItemIds()}
+      />
+      
+      {/* Import Dialog */}
+      <ImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImport={handleImport}
+      />
+      
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        settings={coordinateSettings}
+        onSettingsChange={setCoordinateSettings}
       />
     </div>
   );

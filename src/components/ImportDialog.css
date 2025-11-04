@@ -1,0 +1,46 @@
+.import-dialog {
+  min-width: 500px;
+}
+
+.import-dialog-content {
+  padding: 20px;
+}
+
+.import-info {
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.import-file-section {
+  margin: 20px 0;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(155, 89, 182, 0.1);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+  border-radius: 6px;
+  color: #fff;
+}
+
+.import-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 6px;
+  color: #f44336;
+}
+
+.import-dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+

@@ -201,7 +201,93 @@ When you select an item, related items are automatically highlighted:
 - **Interactive Lists**: Click on related item names to navigate to them
 - **Visual Feedback**: Related items are highlighted in purple in the 3D view
 
-### 6. Item Details and Drawer
+### 6. Export and Import
+
+Target Creator provides powerful export and import capabilities to save, share, and restore your data.
+
+**Accessing Export/Import**
+- Click the "File" menu in the toolbar (top right)
+- Select "Export..." to export your data
+- Select "Import..." to import previously exported data
+
+#### Export Wizard
+
+The Export Wizard guides you through a 4-step process to export your data in various formats.
+
+**Step 1: Data Selection**
+- **Selection Mode**: Choose between exporting all items or only selected items
+- **Include Options**: Select which data types to include:
+  - Targets
+  - Paths
+  - Coordinates
+  - Relationships (connection data)
+  - Metadata (export date, coordinate system, version)
+- Checkboxes allow you to include/exclude specific data types
+
+**Step 2: Format & Options**
+- **Export Format**: Choose from:
+  - **JSON**: JavaScript Object Notation (structured, human-readable)
+  - **CSV**: Comma-Separated Values (spreadsheet-compatible)
+  - **XML**: Extensible Markup Language (structured data format)
+  - **GeoJSON**: Geographic JSON (standard geographic data format)
+- **Coordinate System**: Select the coordinate system for exported data
+  - Can export in current system or convert to another
+  - Note: Conversion may be applied if different from current system
+
+**Step 3: Preview**
+- Review export summary showing:
+  - Count of targets, paths, and coordinates
+  - Number of relationships (if included)
+  - Selected export format
+  - Coordinate system
+- Preview JSON structure (for JSON format)
+- Validation warnings if no data selected
+
+**Step 4: Export**
+- Enter a file name for your export
+- Click "Export" to download the file
+- Progress indicator shows export status
+- File automatically downloads when complete
+
+**Export Features**
+- **Breadcrumb Navigation**: Click any step to navigate back (completed steps only)
+- **Data Filtering**: Export all items or just selected ones
+- **Format Flexibility**: Multiple formats for different use cases
+- **Coordinate Conversion**: Export in any supported coordinate system
+- **Relationship Preservation**: Export maintains all relationship connections
+
+#### Import Dialog
+
+Import previously exported data to restore or merge with your current workspace.
+
+**Import Process**
+1. Click "File" → "Import..." from the toolbar
+2. Click "Browse" to select a file
+3. Supported formats: JSON, CSV, XML, GeoJSON
+4. Review file information (name, size)
+5. Click "Import" to load the data
+
+**Import Features**
+- **Automatic Validation**: Validates file format and structure
+- **Relationship Reconstruction**: Automatically recreates relationships from imported data
+- **Error Handling**: Clear error messages for invalid files
+- **Format Detection**: Automatically detects and parses supported formats
+- **GeoJSON Support**: Converts GeoJSON features to targets and paths
+
+**Import Behavior**
+- **Targets**: Imported targets are added to your workspace
+- **Paths**: Imported paths maintain their coordinate points
+- **Coordinates**: Coordinates are registered and relationships restored
+- **Relationships**: All target-to-coordinate and path-to-coordinate relationships are recreated
+- **Naming**: Imported names are preserved if available
+
+**Import Notes**
+- Imported items are added to existing workspace (does not replace)
+- Duplicate IDs are handled automatically (new IDs generated if needed)
+- Relationships are preserved when importing from exported files
+- Coordinate systems are maintained from the export
+
+### 7. Item Details and Drawer
 
 The bottom drawer provides comprehensive information about selected items.
 
@@ -232,7 +318,7 @@ The bottom drawer provides comprehensive information about selected items.
 - Link/unlink controls are contextually available
 - Real-time updates when relationships change
 
-### 7. Context Menus
+### 8. Context Menus
 
 Right-click functionality provides quick access to common actions.
 
@@ -244,7 +330,7 @@ Right-click functionality provides quick access to common actions.
 - **Target**: Right-click to open naming modal
 - **Path**: Right-click to open naming modal
 
-### 8. Naming Items
+### 9. Naming Items
 
 Custom names help organize and identify your targets, paths, and coordinates.
 
@@ -258,7 +344,7 @@ Custom names help organize and identify your targets, paths, and coordinates.
 - Names are displayed in relationship lists and details
 - Can be changed at any time
 
-### 9. Visual Feedback and Indicators
+### 10. Visual Feedback and Indicators
 
 **Color Coding**
 - **Blue**: Grid points (available placement locations)
@@ -311,7 +397,27 @@ Custom names help organize and identify your targets, paths, and coordinates.
    - Select the path to open the drawer
    - Scroll through the coordinate table to see every point
 
-### Example 3: Managing Complex Relationships
+### Example 3: Exporting and Importing Data
+
+1. **Export Your Workspace**
+   - Click "File" → "Export..." from the toolbar
+   - Select "All items" in Step 1
+   - Choose JSON format in Step 2
+   - Review preview in Step 3
+   - Enter file name and click "Export"
+
+2. **Import Data**
+   - Click "File" → "Import..." from the toolbar
+   - Browse and select your exported file
+   - Click "Import" to load the data
+   - All targets, paths, and relationships will be restored
+
+3. **Selective Export**
+   - Select specific targets or paths
+   - Export only selected items
+   - Useful for sharing subsets of data
+
+### Example 4: Managing Complex Relationships
 
 1. **Select a Target**
    - Click on a target to see its relationships
@@ -338,6 +444,9 @@ Custom names help organize and identify your targets, paths, and coordinates.
 5. **Coordinate Systems**: Choose the coordinate system that matches your domain (NED for aviation, Spherical for radar)
 6. **Grid Navigation**: Use the reset camera button if you get lost in the 3D space
 7. **Drawer Navigation**: Use the right panel tabs to quickly switch between different item types
+8. **Export Regularly**: Export your workspace to preserve your work
+9. **Export Format**: Use JSON for full data preservation, CSV for spreadsheet analysis, GeoJSON for GIS tools
+10. **Selective Export**: Export only selected items to share specific subsets of data
 
 ## Keyboard Shortcuts
 
@@ -369,17 +478,31 @@ Custom names help organize and identify your targets, paths, and coordinates.
 - Try clicking the item again
 - Check that the drawer isn't hidden off-screen
 
+**Export Not Working**
+- Ensure you've selected at least one data type to export
+- Check that you've completed all wizard steps
+- Verify file name doesn't contain invalid characters
+
+**Import Not Working**
+- Ensure file is in a supported format (JSON, CSV, XML, GeoJSON)
+- Check that file contains valid Target Creator data structure
+- Verify file isn't corrupted or empty
+
 ## Technical Details
 
 **Supported Formats**
 - Coordinate systems: NED, Cartesian, Spherical
 - Grid resolution: Configurable minimum units
 - Path types: Straight lines (diagonal supported)
+- Export formats: JSON, CSV, XML, GeoJSON
+- Import formats: JSON, CSV, XML, GeoJSON
 
 **Data Persistence**
 - Relationships are managed in-memory
 - Coordinate registry tracks all grid positions
 - Item names and relationships persist during session
+- Export functionality allows saving workspace state
+- Import functionality allows restoring from saved files
 
 ## Additional Resources
 
