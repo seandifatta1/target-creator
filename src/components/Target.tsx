@@ -13,6 +13,7 @@ export interface TargetProps {
   iconEmoji?: string;
   coordinateSettings: CoordinateSettings;
   isAnnotationOpen: boolean;
+  isRelated?: boolean;
   onToggleAnnotation: (id: string) => void;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -88,6 +89,7 @@ const Target: React.FC<TargetProps> = ({
   iconEmoji = '🎯',
   coordinateSettings,
   isAnnotationOpen,
+  isRelated = false,
   onToggleAnnotation,
   onPointerOver,
   onPointerOut,
@@ -96,14 +98,21 @@ const Target: React.FC<TargetProps> = ({
 }) => {
   // Position icon slightly above the grid point (0.5 units up)
   const iconPosition: [number, number, number] = [position[0], position[1] + 0.5, position[2]];
+  
+  // Use purple color for related items, white for normal
+  const textColor = isRelated ? "#9b59b6" : "#ffffff";
+  const outlineColor = isRelated ? "#9b59b6" : "#000000";
+  const outlineWidth = isRelated ? 0.05 : 0.02;
 
   return (
     <group>
       {/* Icon text that always faces the camera */}
       <Text
         position={iconPosition}
-        fontSize={0.8}
-        color="#ffffff"
+        fontSize={isRelated ? 0.9 : 0.8}
+        color={textColor}
+        outlineColor={outlineColor}
+        outlineWidth={outlineWidth}
         anchorX="center"
         anchorY="middle"
         onPointerOver={() => {

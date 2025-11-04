@@ -155,6 +155,7 @@ const InfiniteGrid: React.FC<{
   onWaitingForPathEndpointChange: (state: { id: string; pathType: string; pathLabel: string } | null) => void;
   onPathEndpointSnapPointChange: (point: [number, number, number] | null) => void;
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
+  relatedItemIds?: { targets: string[]; paths: string[]; coordinates: string[] };
   onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
   onOpenNamingModal: (modal: { isOpen: boolean; itemType: 'target' | 'path' | 'coordinate'; itemId: string; currentName?: string; itemLabel?: string }) => void;
   coordinateRegistry?: ICoordinateRegistry;
@@ -165,7 +166,7 @@ const InfiniteGrid: React.FC<{
   onPathCreationComplete?: (startPosition: [number, number, number], endPosition: [number, number, number], pathType: string, pathLabel: string) => void;
   onPathCreationCancel?: () => void;
   onPathCreationError?: (message: string) => void;
-}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest, pathCreationMode, onPathCreationComplete, onPathCreationCancel, onPathCreationError }) => {
+}> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, relatedItemIds = { targets: [], paths: [], coordinates: [] }, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest, pathCreationMode, onPathCreationComplete, onPathCreationCancel, onPathCreationError }) => {
   const { gl } = useThree();
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
   const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
@@ -637,12 +638,15 @@ const InfiniteGrid: React.FC<{
         if (validTiles.length === 1) {
           const tile = validTiles[0];
           const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
+          const isRelated = relatedItemIds.paths.includes(path.id);
+          // Color priority: selected (green) > related (purple) > normal (white)
+          const sphereColor = isSelected ? "#00ff00" : (isRelated ? "#9b59b6" : "#ffffff");
           
           return (
             <Sphere
               key={path.id}
               position={[tile[0], tile[1] + 0.5, tile[2]]}
-              args={[0.4, 16, 16]}
+              args={[isRelated ? 0.45 : 0.4, 16, 16]}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectItem({
@@ -673,7 +677,7 @@ const InfiniteGrid: React.FC<{
                 document.body.style.cursor = 'auto';
               }}
             >
-              <meshStandardMaterial color={isSelected ? "#00ff00" : "#ffffff"} />
+              <meshStandardMaterial color={sphereColor} />
             </Sphere>
           );
         }
@@ -688,8 +692,10 @@ const InfiniteGrid: React.FC<{
         const lines: React.ReactNode[] = [];
         const clickableBoxes: React.ReactNode[] = [];
         const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
-        const lineColor = isSelected ? "#00ff00" : "#ffffff";
-        const lineWidth = isSelected ? 8 : 6;
+        const isRelated = relatedItemIds.paths.includes(path.id);
+        // Color priority: selected (green) > related (purple) > normal (white)
+        const lineColor = isSelected ? "#00ff00" : (isRelated ? "#9b59b6" : "#ffffff");
+        const lineWidth = isSelected ? 8 : (isRelated ? 7 : 6);
         
         for (let i = 0; i < validTiles.length - 1; i++) {
           const start = validTiles[i];
@@ -831,6 +837,7 @@ const InfiniteGrid: React.FC<{
       {placedObjects.map((obj) => {
         const annotationIsOpen = openAnnotations.has(obj.id);
         const isSelected = selectedItem?.type === 'target' && selectedItem.id === obj.id;
+        const isRelated = relatedItemIds.targets.includes(obj.id);
         
         return (
           <Target
@@ -842,6 +849,7 @@ const InfiniteGrid: React.FC<{
             iconEmoji={obj.iconEmoji}
             coordinateSettings={coordinateSettings}
             isAnnotationOpen={annotationIsOpen}
+            isRelated={isRelated}
             onToggleAnnotation={onToggleAnnotation}
             onPointerOver={() => {
               // Only set hovered if annotation is closed
@@ -995,6 +1003,7 @@ const DragTooltip: React.FC<{
 // Main infinite grid canvas component
 interface InfiniteGridCanvasProps {
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;
+  relatedItemIds?: { targets: string[]; paths: string[]; coordinates: string[] };
   onSelectItem: (item: { type: 'target'; id: string; targetId: string; label: string; name?: string; position: [number, number, number]; iconEmoji?: string } | { type: 'path'; id: string; pathType: string; label: string; name?: string; points: [number, number, number][] } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null) => void;
   coordinateRegistry?: ICoordinateRegistry;
   relationshipManager?: IRelationshipManager;
@@ -1006,7 +1015,8 @@ interface InfiniteGridCanvasProps {
 }
 
 const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({ 
-  selectedItem, 
+  selectedItem,
+  relatedItemIds = { targets: [], paths: [], coordinates: [] },
   onSelectItem,
   coordinateRegistry,
   relationshipManager,
@@ -1477,6 +1487,7 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           onWaitingForPathEndpointChange={setWaitingForPathEndpoint}
           onPathEndpointSnapPointChange={setPathEndpointSnapPoint}
           selectedItem={selectedItem}
+          relatedItemIds={relatedItemIds}
           onSelectItem={onSelectItem}
           onOpenNamingModal={setNamingModal}
           coordinateRegistry={coordinateRegistry}

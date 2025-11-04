@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { Button, Menu, MenuItem, Popover, Position } from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
 import Toolbar from './Toolbar';
 import HamburgerMenu, { HamburgerMenuItem } from './HamburgerMenu';
 import InfiniteGridCanvas from './InfiniteGrid';
@@ -33,7 +35,7 @@ const App: React.FC = () => {
   
   // Business logic services
   const { registry: coordinateRegistry, getAll: getAllCoordinates, updateName: updateCoordinateName } = useCoordinateRegistry();
-  const { manager: relationshipManager, getRelatedItems, getRelationshipCounts } = useRelationshipManager();
+  const { manager: relationshipManager, getRelatedItems, getRelationshipCounts, attachTargetToCoordinate, attachPathToCoordinates, detachTargetFromCoordinate, detachPathFromCoordinate } = useRelationshipManager();
   
   // Sync coordinates from registry
   useEffect(() => {
@@ -88,6 +90,20 @@ const App: React.FC = () => {
         <div className={`app-content ${isLeftMenuOpen ? 'left-menu-open' : ''} ${isRightMenuOpen ? 'right-menu-open' : ''} ${isDragging ? 'dragging' : ''}`}>
           <InfiniteGridCanvas 
             selectedItem={selectedItem}
+            relatedItemIds={selectedItem && relationshipManager ? (() => {
+              const relatedItems = relationshipManager.getRelatedItems(
+                selectedItem.type,
+                selectedItem.id,
+                coordinates,
+                placedObjects,
+                placedPaths
+              );
+              return {
+                targets: relatedItems.filter(item => item.type === 'target').map(item => item.id),
+                paths: relatedItems.filter(item => item.type === 'path').map(item => item.id),
+                coordinates: relatedItems.filter(item => item.type === 'coordinate').map(item => item.id)
+              };
+            })() : { targets: [], paths: [], coordinates: [] }}
             onSelectItem={(item) => {
               setSelectedItem(item);
               // Set active tab based on item type
@@ -156,7 +172,38 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
-                  <h4>Relationships</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ margin: 0 }}>Relationships</h4>
+                    <Popover
+                      content={
+                        <Menu>
+                          {coordinates.map(coord => {
+                            const currentCoordIds = relationshipManager?.getTargetCoordinates(selectedItem.id) || [];
+                            const isLinked = currentCoordIds.includes(coord.id);
+                            return (
+                              <MenuItem
+                                key={coord.id}
+                                text={coord.name || `[${coord.position[0]}, ${coord.position[1]}, ${coord.position[2]}]`}
+                                icon={isLinked ? IconNames.TICK : IconNames.CIRCLE}
+                                onClick={() => {
+                                  if (isLinked) {
+                                    detachTargetFromCoordinate(selectedItem.id, coord.id);
+                                  } else {
+                                    attachTargetToCoordinate(selectedItem.id, coord.id);
+                                  }
+                                  // Force re-render by updating coordinates
+                                  setCoordinates([...coordinateRegistry.getAll()]);
+                                }}
+                              />
+                            );
+                          })}
+                        </Menu>
+                      }
+                      position={Position.BOTTOM_RIGHT}
+                    >
+                      <Button icon={IconNames.ADD} minimal small text="Link Coordinate" />
+                    </Popover>
+                  </div>
                   {relationshipManager && selectedItem ? (() => {
                     const counts = relationshipManager.getRelationshipCounts('target', selectedItem.id);
                     const relatedItems = relationshipManager.getRelatedItems(
@@ -180,6 +227,53 @@ const App: React.FC = () => {
                           <span className="detail-label">Coordinates:</span>
                           <span className="detail-value">{relatedCoords.length}</span>
                         </div>
+                        {relatedCoords.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Linked Coordinates:</div>
+                            {relatedCoords.map(item => {
+                              const coord = coordinates.find(c => c.id === item.id);
+                              return (
+                                <div 
+                                  key={item.id} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    padding: '4px 0',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    const coord = coordinates.find(c => c.id === item.id);
+                                    if (coord) {
+                                      setSelectedItem({
+                                        type: 'coordinate',
+                                        id: coord.id,
+                                        position: coord.position,
+                                        name: coord.name
+                                      });
+                                      setActiveTab('coordinates');
+                                      setSelectedCoordinateId(coord.id);
+                                    }
+                                  }}
+                                >
+                                  <span style={{ color: '#9b59b6', textDecoration: 'underline' }}>
+                                    {item.name || (coord ? `[${coord.position[0]}, ${coord.position[1]}, ${coord.position[2]}]` : item.id)}
+                                  </span>
+                                  <Button
+                                    icon={IconNames.CROSS}
+                                    minimal
+                                    small
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      detachTargetFromCoordinate(selectedItem.id, item.id);
+                                      setCoordinates([...coordinateRegistry.getAll()]);
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {relatedPaths.length > 0 && (
                           <div style={{ marginTop: '10px' }}>
                             <div className="detail-label" style={{ marginBottom: '5px' }}>Related Paths:</div>
@@ -208,6 +302,11 @@ const App: React.FC = () => {
                               </div>
                             ))}
                           </div>
+                        )}
+                        {relatedCoords.length === 0 && relatedPaths.length === 0 && (
+                          <p style={{ color: '#888', fontStyle: 'italic', marginTop: '10px' }}>
+                            No relationships. Click "Link Coordinate" to create one.
+                          </p>
                         )}
                       </>
                     );
@@ -275,7 +374,38 @@ const App: React.FC = () => {
                   )}
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
-                  <h4>Relationships</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h4 style={{ margin: 0 }}>Relationships</h4>
+                    <Popover
+                      content={
+                        <Menu>
+                          {coordinates.map(coord => {
+                            const currentCoordIds = relationshipManager?.getPathCoordinates(selectedItem.id) || [];
+                            const isLinked = currentCoordIds.includes(coord.id);
+                            return (
+                              <MenuItem
+                                key={coord.id}
+                                text={coord.name || `[${coord.position[0]}, ${coord.position[1]}, ${coord.position[2]}]`}
+                                icon={isLinked ? IconNames.TICK : IconNames.CIRCLE}
+                                onClick={() => {
+                                  const currentIds = relationshipManager?.getPathCoordinates(selectedItem.id) || [];
+                                  if (isLinked) {
+                                    detachPathFromCoordinate(selectedItem.id, coord.id);
+                                  } else {
+                                    attachPathToCoordinates(selectedItem.id, [...currentIds, coord.id]);
+                                  }
+                                  setCoordinates([...coordinateRegistry.getAll()]);
+                                }}
+                              />
+                            );
+                          })}
+                        </Menu>
+                      }
+                      position={Position.BOTTOM_RIGHT}
+                    >
+                      <Button icon={IconNames.ADD} minimal small text="Link Coordinates" />
+                    </Popover>
+                  </div>
                   {relationshipManager && selectedItem ? (() => {
                     const counts = relationshipManager.getRelationshipCounts('path', selectedItem.id);
                     const relatedItems = relationshipManager.getRelatedItems(
@@ -299,6 +429,53 @@ const App: React.FC = () => {
                           <span className="detail-label">Coordinates:</span>
                           <span className="detail-value">{relatedCoords.length}</span>
                         </div>
+                        {relatedCoords.length > 0 && (
+                          <div style={{ marginTop: '10px' }}>
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Linked Coordinates:</div>
+                            {relatedCoords.map(item => {
+                              const coord = coordinates.find(c => c.id === item.id);
+                              return (
+                                <div 
+                                  key={item.id} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    padding: '4px 0',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    const coord = coordinates.find(c => c.id === item.id);
+                                    if (coord) {
+                                      setSelectedItem({
+                                        type: 'coordinate',
+                                        id: coord.id,
+                                        position: coord.position,
+                                        name: coord.name
+                                      });
+                                      setActiveTab('coordinates');
+                                      setSelectedCoordinateId(coord.id);
+                                    }
+                                  }}
+                                >
+                                  <span style={{ color: '#9b59b6', textDecoration: 'underline' }}>
+                                    {item.name || (coord ? `[${coord.position[0]}, ${coord.position[1]}, ${coord.position[2]}]` : item.id)}
+                                  </span>
+                                  <Button
+                                    icon={IconNames.CROSS}
+                                    minimal
+                                    small
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      detachPathFromCoordinate(selectedItem.id, item.id);
+                                      setCoordinates([...coordinateRegistry.getAll()]);
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {relatedTargets.length > 0 && (
                           <div style={{ marginTop: '10px' }}>
                             <div className="detail-label" style={{ marginBottom: '5px' }}>Related Targets:</div>
@@ -328,6 +505,11 @@ const App: React.FC = () => {
                               </div>
                             ))}
                           </div>
+                        )}
+                        {relatedCoords.length === 0 && relatedTargets.length === 0 && (
+                          <p style={{ color: '#888', fontStyle: 'italic', marginTop: '10px' }}>
+                            No relationships. Click "Link Coordinates" to create one.
+                          </p>
                         )}
                       </>
                     );
@@ -354,7 +536,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div className="detail-section" style={{ marginTop: '20px' }}>
-                  <h4>Relationships</h4>
+                  <h4 style={{ marginBottom: '10px' }}>Relationships</h4>
                   {relationshipManager && selectedItem ? (() => {
                     const counts = relationshipManager.getRelationshipCounts('coordinate', selectedItem.id);
                     const relatedItems = relationshipManager.getRelatedItems(
@@ -379,62 +561,107 @@ const App: React.FC = () => {
                         </div>
                         {relatedTargets.length > 0 && (
                           <div style={{ marginTop: '10px' }}>
-                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Targets:</div>
-                            {relatedTargets.map(item => (
-                              <div 
-                                key={item.id} 
-                                className="detail-value" 
-                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
-                                onClick={() => {
-                                  const target = placedObjects.find(t => t.id === item.id);
-                                  if (target) {
-                                    setSelectedItem({
-                                      type: 'target',
-                                      id: target.id,
-                                      targetId: target.targetId,
-                                      label: target.targetLabel,
-                                      name: target.name,
-                                      position: target.position,
-                                      iconEmoji: target.iconEmoji
-                                    });
-                                    setActiveTab('targets');
-                                    setSelectedTargetId(target.id);
-                                  }
-                                }}
-                              >
-                                {item.name || item.id}
-                              </div>
-                            ))}
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Linked Targets:</div>
+                            {relatedTargets.map(item => {
+                              const target = placedObjects.find(t => t.id === item.id);
+                              return (
+                                <div 
+                                  key={item.id} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    padding: '4px 0',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    const target = placedObjects.find(t => t.id === item.id);
+                                    if (target) {
+                                      setSelectedItem({
+                                        type: 'target',
+                                        id: target.id,
+                                        targetId: target.targetId,
+                                        label: target.targetLabel,
+                                        name: target.name,
+                                        position: target.position,
+                                        iconEmoji: target.iconEmoji
+                                      });
+                                      setActiveTab('targets');
+                                      setSelectedTargetId(target.id);
+                                    }
+                                  }}
+                                >
+                                  <span style={{ color: '#9b59b6', textDecoration: 'underline' }}>
+                                    {item.name || item.id}
+                                  </span>
+                                  <Button
+                                    icon={IconNames.CROSS}
+                                    minimal
+                                    small
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      detachTargetFromCoordinate(item.id, selectedItem.id);
+                                      setCoordinates([...coordinateRegistry.getAll()]);
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                         {relatedPaths.length > 0 && (
                           <div style={{ marginTop: '10px' }}>
-                            <div className="detail-label" style={{ marginBottom: '5px' }}>Related Paths:</div>
-                            {relatedPaths.map(item => (
-                              <div 
-                                key={item.id} 
-                                className="detail-value" 
-                                style={{ cursor: 'pointer', color: '#9b59b6', textDecoration: 'underline' }}
-                                onClick={() => {
-                                  const path = placedPaths.find(p => p.id === item.id);
-                                  if (path) {
-                                    setSelectedItem({
-                                      type: 'path',
-                                      id: path.id,
-                                      pathType: path.pathType,
-                                      label: path.pathLabel,
-                                      name: path.name,
-                                      points: path.litTiles || []
-                                    });
-                                    setActiveTab('paths');
-                                    setSelectedPathId(path.id);
-                                  }
-                                }}
-                              >
-                                {item.name || item.id}
-                              </div>
-                            ))}
+                            <div className="detail-label" style={{ marginBottom: '5px' }}>Linked Paths:</div>
+                            {relatedPaths.map(item => {
+                              const path = placedPaths.find(p => p.id === item.id);
+                              return (
+                                <div 
+                                  key={item.id} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    padding: '4px 0',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => {
+                                    const path = placedPaths.find(p => p.id === item.id);
+                                    if (path) {
+                                      setSelectedItem({
+                                        type: 'path',
+                                        id: path.id,
+                                        pathType: path.pathType,
+                                        label: path.pathLabel,
+                                        name: path.name,
+                                        points: path.litTiles || []
+                                      });
+                                      setActiveTab('paths');
+                                      setSelectedPathId(path.id);
+                                    }
+                                  }}
+                                >
+                                  <span style={{ color: '#9b59b6', textDecoration: 'underline' }}>
+                                    {item.name || item.id}
+                                  </span>
+                                  <Button
+                                    icon={IconNames.CROSS}
+                                    minimal
+                                    small
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      detachPathFromCoordinate(item.id, selectedItem.id);
+                                      setCoordinates([...coordinateRegistry.getAll()]);
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
+                        )}
+                        {relatedTargets.length === 0 && relatedPaths.length === 0 && (
+                          <p style={{ color: '#888', fontStyle: 'italic', marginTop: '10px' }}>
+                            No relationships. Relationships are created automatically when targets or paths are placed at this coordinate.
+                          </p>
                         )}
                       </>
                     );
