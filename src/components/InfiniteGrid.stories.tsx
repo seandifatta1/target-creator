@@ -11,9 +11,11 @@ const meta: Meta<typeof InfiniteGridCanvas> = {
   },
   decorators: [
     (Story) => (
-      <DragTargetProvider>
-        <Story />
-      </DragTargetProvider>
+      <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden' }}>
+        <DragTargetProvider>
+          <Story />
+        </DragTargetProvider>
+      </div>
     ),
   ],
 };
