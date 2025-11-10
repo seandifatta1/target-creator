@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { Drawer as BPDrawer, Button, Icon, Tabs, Tab, HTMLSelect } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import './Drawer.css';
+import './GridItemDetailsDrawer.css';
 
-export interface DrawerProps {
+export interface GridItemDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   children?: React.ReactNode;
@@ -25,7 +25,31 @@ export interface DrawerProps {
   onCoordinateSelect?: (id: string) => void;
 }
 
-const Drawer: React.FC<DrawerProps> = ({ 
+/**
+ * GridItemDetailsDrawer - Bottom drawer component for displaying grid item details and navigation
+ * 
+ * **How it's used in the app:**
+ * This component appears at the bottom of the screen when a user selects an item
+ * (target, path, or coordinate) from the 3D grid. For example, when a user clicks
+ * on a target object in the grid, the drawer slides up from the bottom showing
+ * details about that target, related items, and tabs for navigating between targets,
+ * paths, and coordinates. It's part of the item inspection system that allows users
+ * to view and manage details about placed objects in the grid.
+ * 
+ * **Dependency Injection:**
+ * All callbacks and data are injected through props:
+ * - `onClose`: Injected callback to allow parent to control drawer visibility.
+ *   This enables separation of concerns - drawer handles UI, parent manages state.
+ * - `onTabChange`: Injected callback to notify parent when tabs change.
+ *   This enables parent to sync tab state with other UI elements.
+ * - `onTargetSelect`, `onPathSelect`, `onCoordinateSelect`: Injected callbacks
+ *   for item selection. This enables parent to handle selection logic and update
+ *   the 3D grid accordingly.
+ * - All data arrays (targets, paths, coordinates): Injected to allow testing with
+ *   mock data and to enable different data sources. This enables easier testing
+ *   and flexibility to swap data providers.
+ */
+const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({ 
   isOpen, 
   onClose, 
   children, 
@@ -191,5 +215,5 @@ const Drawer: React.FC<DrawerProps> = ({
   );
 };
 
-export default Drawer;
+export default GridItemDetailsDrawer;
 

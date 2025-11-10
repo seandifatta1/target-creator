@@ -5,7 +5,7 @@ import { IconNames } from '@blueprintjs/icons';
 import Toolbar from './Toolbar';
 import HamburgerMenu, { HamburgerMenuItem } from './HamburgerMenu';
 import InfiniteGridCanvas from './InfiniteGrid';
-import Drawer from './Drawer';
+import GridItemDetailsDrawer from './GridItemDetailsDrawer';
 import ExportWizard from './ExportWizard';
 import ImportDialog from './ImportDialog';
 import SettingsModal, { CoordinateSettings } from './SettingsModal';
@@ -248,7 +248,7 @@ const App: React.FC = () => {
       </div>
       
       {/* Bottom Drawer */}
-      <Drawer
+      <GridItemDetailsDrawer
         isOpen={selectedItem !== null}
         onClose={() => {
           setSelectedItem(null);
