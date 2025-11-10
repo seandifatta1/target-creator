@@ -26,5 +26,3 @@ type Story = StoryObj<typeof InfiniteGridCanvas>;
 export const Default: Story = {
   render: () => <InfiniteGridCanvas />,
 };
-
-
