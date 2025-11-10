@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { Canvas } from '@react-three/fiber';
 import InfiniteGridScene from './InfiniteGridScene';
-import { DragTargetProvider } from '../hooks/DragTargetContext';
+import { DragTargetProvider } from '../../hooks/DragTargetContext';
 
 // Mock Three.js components
 jest.mock('@react-three/drei', () => ({

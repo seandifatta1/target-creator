@@ -22,14 +22,66 @@ Cursor should:
 - If you think a .md file might be appropriate, PROMPT the user first before creating it.
 
 # File organization
-- Put hooks in /src/hooks
+
+## Component Structure
+- **Components with multiple files** should live in a folder with the same name as the component
+  - Example: `InfiniteGrid/InfiniteGrid.tsx`, `InfiniteGrid/InfiniteGridScene.tsx`, etc.
+- **All utility functions** for a component should exist at the "root" of that component's folder
+  - Example: `InfiniteGrid/utils.ts` or `InfiniteGrid/helpers.ts`
+- **Component-specific hooks** should live local to the component
+  - Example: `InfiniteGrid/useInfiniteGrid.ts` or `InfiniteGrid/hooks/useInfiniteGrid.ts`
+- **Component-specific helper/utilities** should live local to the component
+  - Example: `InfiniteGrid/helpers.ts` or `InfiniteGrid/utils.ts`
+- This structure applies **recursively** through the app
+
+## Project-Level Files
+- **Project-level hooks** (`/src/hooks`) are fine when truly used in many different places
+- **Project-level utilities** (`/src/utils`) are fine when truly used in many different places
+- Use project-level files only when they are shared across multiple unrelated components
+
+## General Organization
 - Put reusable UI in /src/components
-- Put utility functions in /src/utils
+- Put shared hooks in /src/hooks (only if used across multiple unrelated components)
+- Put shared utility functions in /src/utils (only if used across multiple unrelated components)
 
 # Naming
 - Hooks start with "use"
 - Components are PascalCase
 - Variables are camelCase
+
+# Documentation Requirements
+- **ALL functions** (including hooks, utilities, components) MUST have detailed documentation at the top
+- Documentation should explain:
+  1. **How the function is used in the app** - Describe at a UX level what user interactions or app flows use this function
+  2. **Dependency injection explanation** - Explain why dependencies are injected and how they're used
+  3. **Parameters and return values** - Clear description of inputs/outputs
+  4. **Usage examples** - Show how to use the function in context
+
+**Example Documentation Format:**
+```typescript
+/**
+ * [Function name] - [Brief description]
+ * 
+ * **How it's used in the app:**
+ * This function is called when [describe UX scenario]. For example, when a user
+ * [specific user action], this function [what it does]. It's part of the [feature/flow]
+ * that allows users to [user goal].
+ * 
+ * **Dependency Injection:**
+ * The [dependency name] is injected to allow [reason for DI]. This enables:
+ * - [Benefit 1: e.g., easier testing]
+ * - [Benefit 2: e.g., flexibility to swap implementations]
+ * - [Benefit 3: e.g., better separation of concerns]
+ * 
+ * @param [param name] - [description]
+ * @returns [return description]
+ * 
+ * @example
+ * ```typescript
+ * const result = functionName(param1, param2);
+ * ```
+ */
+```
 
 # Modularity & Stories
 - Prioritize modularity via dependency injection (DI) for components, utilities, and business logic.
@@ -38,7 +90,41 @@ Cursor should:
 - Any new component should also include a colocated Storybook story with story actions (using `fn()` from 'storybook/test').
 
 # Testing
+
+## Component Testing
 - Any new component should have a corresponding Jest test file in the same folder.
 - Test files should be named `<component-name>_test.tsx` (or `_test.ts` for non-component files).
 - Test files should include basic test structure but can start empty/stubbed.
+
+## Hook Testing (MUST follow all strategies from HOOK_TESTING_BEST_PRACTICES.md)
+
+### Strategy 1: Layered Testing (Required)
+1. **Layer 1: Extract Pure Logic Functions**
+   - Extract business logic from hooks into pure, testable functions that don't depend on React
+   - Place these in component-specific utils (e.g., `ComponentName/utils.ts` or `ComponentName/logic.ts`)
+   - Test with standard Jest (no `renderHook` or `act` needed)
+   - Fast, simple, easy to maintain
+
+2. **Layer 2: Test Hook Integration**
+   - Use `renderHook` from `@testing-library/react` to test React-specific behavior
+   - Test state updates, callbacks, and effects
+   - Mock dependencies via dependency injection
+
+3. **Layer 3: Component Integration Tests**
+   - Test hooks within actual components using React Testing Library
+   - Verify user interactions and component behavior
+   - Catch integration issues
+
+4. **Layer 4: Storybook for Visual Testing**
+   - Create wrapper components that use the hook
+   - Visualize hook behavior and state changes
+   - Interactive documentation
+
+### Hook Testing Requirements
+- **MUST** extract pure logic functions from hooks for unit testing
+- **MUST** test hook behavior with `renderHook` from `@testing-library/react`
+- **MUST** create Storybook stories with wrapper components for visual testing
+- **MUST** use dependency injection for testability
+- Pure logic functions should be in component-specific utils (not project-level unless truly shared)
+- Hook tests should be colocated with the hook (e.g., `ComponentName/hooks/useHook_test.ts`)
 

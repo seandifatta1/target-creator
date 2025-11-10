@@ -3,21 +3,48 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Button, Icon, Collapse, Menu, MenuItem, MenuDivider, OverlayToaster } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import SettingsModal, { CoordinateSettings } from './SettingsModal';
-import NameModal from './NameModal';
-import TargetBuilder from './TargetBuilder';
-import PathBuilder from './PathBuilder';
-import { OrbitControlsWrapper } from './OrbitControlsWrapper';
-import { DragTooltip } from './DragTooltip';
+import SettingsModal, { CoordinateSettings } from '../SettingsModal';
+import NameModal from '../NameModal';
+import TargetBuilder from '../TargetBuilder';
+import PathBuilder from '../PathBuilder';
+import { OrbitControlsWrapper } from '../OrbitControlsWrapper';
+import { DragTooltip } from '../DragTooltip';
 import InfiniteGridScene from './InfiniteGridScene';
-import { useDragTargetContext } from '../hooks/DragTargetContext';
-import { usePathCreation } from '../hooks/usePathCreation';
-import { ICoordinateRegistry } from '../services/CoordinateRegistry';
-import { IRelationshipManager } from '../services/RelationshipManager';
+import { useDragTargetContext } from '../../hooks/DragTargetContext';
+import { usePathCreation } from './hooks/usePathCreation';
+import { ICoordinateRegistry } from '../../services/CoordinateRegistry';
+import { IRelationshipManager } from '../../services/RelationshipManager';
 import './InfiniteGrid.css';
 
-
-
+/**
+ * InfiniteGridCanvas - Container component for the infinite 3D grid system
+ * 
+ * **How it's used in the app:**
+ * This is the main component that users interact with when working with the 3D grid. It provides
+ * the complete infinite grid experience including: the 3D canvas for placing targets and paths,
+ * UI controls for settings and annotations, context menus for creating objects, builder modals
+ * for custom targets/paths, naming modals for objects, and drag-and-drop functionality. When a
+ * user opens the application, this component orchestrates all the UI elements and manages the
+ * state for placed objects, paths, coordinates, and user interactions.
+ * 
+ * **Dependency Injection:**
+ * All business logic services are injected as optional props:
+ * - `coordinateRegistry`: Injected to allow the component to register and manage coordinates.
+ *   This enables easier testing with mock registries and flexibility to swap implementations
+ *   (e.g., in-memory vs persistent storage). If not provided, coordinates are still tracked
+ *   but not registered in a centralized registry.
+ * - `relationshipManager`: Injected to allow the component to create and manage relationships
+ *   between targets, paths, and coordinates. This enables easier testing with mock managers
+ *   and flexibility to swap implementations. If not provided, relationships are not tracked.
+ * - `onPlacedObjectsChange`, `onPlacedPathsChange`: Injected callbacks to allow parent components
+ *   to manage state. This enables separation of concerns - the component handles UI, parent
+ *   manages application state. If not provided, component manages state internally.
+ * - `onCoordinatesChange`: Injected callback to notify parent when coordinates change. This enables
+ *   parent components to sync coordinate state with other parts of the application.
+ * 
+ * This component follows the container/presentational pattern where it (container) manages state
+ * and UI orchestration, while InfiniteGridScene (presentational) focuses on 3D rendering.
+ */
 // Main infinite grid canvas component
 interface InfiniteGridCanvasProps {
   selectedItem: { type: 'target'; id: string } | { type: 'path'; id: string } | { type: 'coordinate'; id: string; position: [number, number, number]; name?: string } | null;

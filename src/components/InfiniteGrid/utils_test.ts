@@ -4,8 +4,8 @@ import {
   shouldShowPathCreationToast,
   createPathCreationToastConfig,
   PathCreationMode,
-} from './pathCreationLogic';
-import { Position3D } from './gridUtils';
+} from './utils';
+import { Position3D } from '../../utils/gridUtils';
 
 describe('pathCreationLogic', () => {
   describe('validatePathEndpoint', () => {
@@ -32,7 +32,9 @@ describe('pathCreationLogic', () => {
     });
 
     it('should reject invalid endpoint (not on line)', () => {
-      const result = validatePathEndpoint([0, 0, 0], [1, 0, 1], 20);
+      // [1, 0, 2] is invalid because |dx| = 1, |dz| = 2, so |dx| !== |dz| (not diagonal)
+      // and it's not horizontal (dz !== 0) or vertical (dx !== 0)
+      const result = validatePathEndpoint([0, 0, 0], [1, 0, 2], 20);
       expect(result.isValid).toBe(false);
       expect(result.error).toContain('valid endpoint');
     });

@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { OverlayToaster } from '@blueprintjs/core';
-import { calculateLinePoints, Position3D } from '../utils/gridUtils';
-import { ICoordinateRegistry } from '../services/CoordinateRegistry';
-import { IRelationshipManager } from '../services/RelationshipManager';
+import { Position3D } from '../../../utils/gridUtils';
+import { createPathData } from '../utils';
+import { ICoordinateRegistry } from '../../../services/CoordinateRegistry';
+import { IRelationshipManager } from '../../../services/RelationshipManager';
 
 export interface PathCreationMode {
   isActive: boolean;
@@ -30,8 +31,51 @@ export interface UsePathCreationOptions {
 }
 
 /**
- * Hook for managing path creation mode and related operations.
- * Handles path creation state, validation, completion, and error handling.
+ * usePathCreation - Hook for managing path creation mode and related operations
+ * 
+ * **How it's used in the app:**
+ * This hook is used by the InfiniteGrid component to manage the entire path creation workflow.
+ * When a user right-clicks a grid point and selects "Create Path" from the context menu, this hook
+ * enters path creation mode. The user then sees a toast notification and can click another grid point
+ * to set the endpoint. This hook validates the endpoint, creates the path data, registers coordinates,
+ * creates relationships, and updates the application state. It's the central state management for the
+ * path creation feature that allows users to create straight or diagonal paths between two points on
+ * the 3D grid.
+ * 
+ * **Dependency Injection:**
+ * The hook accepts optional dependencies through the `options` parameter:
+ * - `coordinateRegistry`: Injected to allow testing with mock registries and to enable different
+ *   coordinate management strategies. This enables easier unit testing and flexibility.
+ * - `relationshipManager`: Injected to allow testing with mock managers and to enable different
+ *   relationship tracking strategies. This enables easier unit testing and flexibility.
+ * - `onCoordinatesChange`: Injected callback to notify parent components when coordinates change.
+ *   This enables separation of concerns - the hook manages path creation, parent manages coordinate updates.
+ * - `toasterRef`: Injected to allow testing without actual toast rendering and to enable different
+ *   notification strategies. This enables easier unit testing and flexibility.
+ * 
+ * @param placedPaths - Current array of placed paths in the grid
+ * @param setPlacedPaths - State setter function for updating placed paths
+ * @param options - Optional configuration object with dependencies
+ * @returns Object containing path creation mode state and handler functions
+ * 
+ * @example
+ * ```typescript
+ * const {
+ *   pathCreationMode,
+ *   startPathCreation,
+ *   completePathCreation,
+ *   cancelPathCreation,
+ *   showPathCreationError
+ * } = usePathCreation(placedPaths, setPlacedPaths, {
+ *   coordinateRegistry,
+ *   relationshipManager,
+ *   onCoordinatesChange,
+ *   toasterRef
+ * });
+ * 
+ * // Start path creation when user selects "Create Path"
+ * startPathCreation([0, 0, 0], 'path-line', 'Main Corridor');
+ * ```
  */
 export function usePathCreation(
   placedPaths: PathData[],
@@ -126,20 +170,20 @@ export function usePathCreation(
       pathType: string,
       pathLabel: string
     ) => {
-      // Calculate all points on the line between start and end
-      const allPositions = calculateLinePoints(startPosition, endPosition);
-      const newPath: PathData = {
-        id: `path_${Date.now()}`,
-        points: [],
-        pathType: pathType,
-        pathLabel: pathLabel,
-        name: pathCreationMode.pathName,
-        litTiles: allPositions,
-      };
+      // Create path data using extracted pure function
+      const newPath: PathData = createPathData(
+        startPosition,
+        endPosition,
+        pathType,
+        pathLabel,
+        pathCreationMode.pathName
+      );
+      // Override ID to use timestamp
+      newPath.id = `path_${Date.now()}`;
 
       // Register coordinates and create relationships
       if (coordinateRegistry && relationshipManager) {
-        const coords = allPositions.map((pos) => coordinateRegistry.getOrCreate(pos));
+        const coords = newPath.litTiles.map((pos) => coordinateRegistry.getOrCreate(pos));
         relationshipManager.attachPathToCoordinates(
           newPath.id,
           coords.map((c) => c.id)

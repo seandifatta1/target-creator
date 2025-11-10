@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useGridInteraction } from './useGridInteraction';
-import { Position3D } from '../utils/gridUtils';
+import { Position3D } from '../../../utils/gridUtils';
 
 // Mock services
 const mockCoordinateRegistry = {
@@ -15,6 +15,7 @@ const mockCoordinateRegistry = {
   updateName: jest.fn(),
   remove: jest.fn(),
   getByPositions: jest.fn(),
+  generateId: jest.fn((pos: Position3D) => `coord_${pos[0]}_${pos[1]}_${pos[2]}`),
 };
 
 const mockRelationshipManager = {
@@ -75,6 +76,7 @@ describe('useGridInteraction', () => {
     const placedPaths = [
       {
         id: 'path-1',
+        points: [] as Position3D[],
         pathType: 'line',
         pathLabel: 'Test Path',
         litTiles: [[1, 0, 2]] as Position3D[],

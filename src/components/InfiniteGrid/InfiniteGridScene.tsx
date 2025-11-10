@@ -3,29 +3,50 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Grid, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
-import SettingsModal, { CoordinateSettings } from './SettingsModal';
-import CoordinateAxes from './CoordinateAxes';
-import Target from './Target';
-import { GridPoint } from './GridPoint';
-import { DragHandler } from './DragHandler';
-import { PathRenderer, PathData } from './PathRenderer';
-import { useDragTargetContext } from '../hooks/DragTargetContext';
-import { useMousePosition } from '../hooks/useMousePosition';
-import { useGridInteraction } from '../hooks/useGridInteraction';
-import { ICoordinateRegistry } from '../services/CoordinateRegistry';
-import { IRelationshipManager } from '../services/RelationshipManager';
+import SettingsModal, { CoordinateSettings } from '../SettingsModal';
+import CoordinateAxes from '../CoordinateAxes';
+import Target from '../Target';
+import { GridPoint } from '../GridPoint';
+import { DragHandler } from '../DragHandler';
+import { PathRenderer, PathData } from '../PathRenderer';
+import { useDragTargetContext } from '../../hooks/DragTargetContext';
+import { useMousePosition } from '../../hooks/useMousePosition';
+import { useGridInteraction } from './hooks/useGridInteraction';
+import { ICoordinateRegistry } from '../../services/CoordinateRegistry';
+import { IRelationshipManager } from '../../services/RelationshipManager';
 import {
   positionsEqual,
   generateGridPoints,
   getValidLineEndpoints,
   Position3D,
-} from '../utils/gridUtils';
+} from '../../utils/gridUtils';
 import './InfiniteGrid.css';
 
 /**
- * InfiniteGridScene - Presentational component for 3D scene rendering.
- * This component handles all 3D rendering logic and is used inside a Canvas.
- * It receives all data and callbacks as props (container/presentational pattern).
+ * InfiniteGridScene - Presentational component for 3D scene rendering
+ * 
+ * **How it's used in the app:**
+ * This component is rendered inside a Three.js Canvas and displays the entire 3D grid scene.
+ * When a user views the infinite grid, they see this component rendering: grid lines, grid points,
+ * placed target objects, paths connecting lit tiles, coordinate axes, lighting, and drag indicators.
+ * It's the visual representation of the 3D space where users place targets and create paths. The
+ * component receives all data and callbacks as props, making it a pure presentational component
+ * that focuses solely on rendering the 3D scene without managing application state.
+ * 
+ * **Dependency Injection:**
+ * All dependencies are injected through props rather than being imported directly:
+ * - `coordinateRegistry`: Injected to allow the component to register coordinates when objects
+ *   are placed. This enables easier testing with mock registries and flexibility to swap implementations.
+ * - `relationshipManager`: Injected to allow the component to create relationships between objects
+ *   and coordinates. This enables easier testing with mock managers and flexibility to swap implementations.
+ * - All callbacks (`onSelectItem`, `onPlacedObjectsChange`, etc.): Injected to allow the component
+ *   to communicate with parent without being tightly coupled. This enables easier testing and
+ *   reusability in different contexts.
+ * - `pathCreationMode`: Injected state to allow the component to highlight valid endpoints during
+ *   path creation. This enables separation of concerns - parent manages state, component renders it.
+ * 
+ * This component follows the container/presentational pattern where InfiniteGrid (container) manages
+ * state and UI orchestration, while InfiniteGridScene (presentational) focuses on 3D rendering.
  */
 export interface InfiniteGridSceneProps {
   coordinateSettings: CoordinateSettings;

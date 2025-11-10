@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { Position3D, getValidLineEndpoints } from '../utils/gridUtils';
-import { ICoordinateRegistry } from '../services/CoordinateRegistry';
-import { IRelationshipManager } from '../services/RelationshipManager';
+import { Position3D, getValidLineEndpoints } from '../../../utils/gridUtils';
+import { ICoordinateRegistry } from '../../../services/CoordinateRegistry';
+import { IRelationshipManager } from '../../../services/RelationshipManager';
 
 export interface PlacedObject {
   id: string;
@@ -59,8 +59,56 @@ export interface UseGridInteractionOptions {
 }
 
 /**
- * Hook for managing grid point interactions.
- * Handles clicks, coordinate registration, path selection, and object placement.
+ * useGridInteraction - Hook for managing grid point click interactions
+ * 
+ * **How it's used in the app:**
+ * This hook is used by the InfiniteGridScene component to handle all grid point click interactions.
+ * When a user clicks on a blue grid point in the 3D scene, this hook determines what action to take:
+ * - If in path creation mode: validates and completes path creation
+ * - If clicking on a path-lit tile: selects that path and opens the drawer
+ * - Otherwise: registers the coordinate, places a new target object, and creates relationships
+ * It's the central interaction handler for the 3D grid that transforms user clicks into application
+ * state changes, enabling users to place targets, create paths, and interact with the grid.
+ * 
+ * **Dependency Injection:**
+ * The hook accepts dependencies through the `options` parameter:
+ * - `coordinateRegistry`: Injected to allow testing with mock registries and to enable different
+ *   coordinate management strategies. This enables easier unit testing and flexibility to swap
+ *   implementations (e.g., in-memory vs persistent storage).
+ * - `relationshipManager`: Injected to allow testing with mock managers and to enable different
+ *   relationship tracking strategies. This enables easier unit testing and flexibility to swap
+ *   implementations.
+ * - `onPlacedObjectsChange`: Injected callback to notify parent components when objects are placed.
+ *   This enables separation of concerns - the hook handles interaction logic, parent manages state.
+ * - `onSelectItem`: Injected callback to notify parent components when items are selected.
+ *   This enables separation of concerns - the hook handles selection logic, parent manages UI state.
+ * - `onPathCreationComplete`: Injected callback for path creation completion. This enables the hook
+ *   to work with different path creation strategies without being tightly coupled.
+ * - `onPathCreationError`: Injected callback for path creation errors. This enables the hook to
+ *   communicate errors without being tightly coupled to error handling UI.
+ * 
+ * @param options - Configuration object containing all dependencies and callbacks
+ * @returns Object containing the grid point click handler function
+ * 
+ * @example
+ * ```typescript
+ * const { handleGridPointClick } = useGridInteraction({
+ *   gridSize: 20,
+ *   placedPaths,
+ *   placedObjects,
+ *   pathCreationMode,
+ *   coordinateRegistry,
+ *   relationshipManager,
+ *   onPlacedObjectsChange,
+ *   onSelectItem,
+ *   onCoordinatesChange,
+ *   onPathCreationComplete,
+ *   onPathCreationError
+ * });
+ * 
+ * // Use in GridPoint component
+ * <GridPoint onClick={() => handleGridPointClick(position)} />
+ * ```
  */
 export function useGridInteraction(
   options: UseGridInteractionOptions

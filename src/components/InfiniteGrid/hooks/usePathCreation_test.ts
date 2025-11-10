@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { usePathCreation } from './usePathCreation';
-import { Position3D } from '../utils/gridUtils';
+import { Position3D } from '../../../utils/gridUtils';
 
 // Mock OverlayToaster
 jest.mock('@blueprintjs/core', () => ({
@@ -16,7 +16,7 @@ describe('usePathCreation', () => {
     show: jest.fn(() => 'toast-key'),
     dismiss: jest.fn(),
   };
-  const mockToasterRef = { current: mockToaster };
+  const mockToasterRef: React.RefObject<OverlayToaster | null> = { current: mockToaster as any };
 
   const defaultOptions = {
     toasterRef: mockToasterRef,

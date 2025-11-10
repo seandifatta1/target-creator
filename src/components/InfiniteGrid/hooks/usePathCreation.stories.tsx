@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState, useRef } from 'react';
 import { Button, OverlayToaster } from '@blueprintjs/core';
 import { usePathCreation } from './usePathCreation';
-import { PathData } from '../utils/pathCreationLogic';
+import { PathData } from '../utils';
 
 /**
  * Demo component that wraps usePathCreation hook for Storybook visualization
