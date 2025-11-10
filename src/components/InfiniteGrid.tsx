@@ -19,13 +19,14 @@ import { PathRenderer, PathData } from './PathRenderer';
 import { DragTooltip } from './DragTooltip';
 import { useDragTargetContext } from '../hooks/DragTargetContext';
 import { useMousePosition } from '../hooks/useMousePosition';
+import { usePathCreation } from '../hooks/usePathCreation';
+import { useGridInteraction } from '../hooks/useGridInteraction';
 import { ICoordinateRegistry } from '../services/CoordinateRegistry';
 import { IRelationshipManager } from '../services/RelationshipManager';
 import {
   positionsEqual,
   generateGridPoints,
   getValidLineEndpoints,
-  calculateLinePoints,
   Position3D,
 } from '../utils/gridUtils';
 import './InfiniteGrid.css';
@@ -59,7 +60,6 @@ const InfiniteGrid: React.FC<{
 }> = ({ coordinateSettings, onHoveredObjectChange, onPlacedObjectsChange, onPlacedPathsChange, placedObjects, placedPaths, openAnnotations, onToggleAnnotation, waitingForPathEndpoint, onWaitingForPathEndpointChange, onPathEndpointSnapPointChange, selectedItem, relatedItemIds = { targets: [], paths: [], coordinates: [] }, onSelectItem, onOpenNamingModal, coordinateRegistry, relationshipManager, onCoordinatesChange, onContextMenuRequest, pathCreationMode, onPathCreationComplete, onPathCreationCancel, onPathCreationError }) => {
   const { gl } = useThree();
   const [gridSize] = useState(20); // Grid extends from -10 to +10 in each direction
-  const [selectedGridPoint, setSelectedGridPoint] = useState<[number, number, number] | null>(null);
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const [pathEndpointSnapPoint, setPathEndpointSnapPoint] = useState<[number, number, number] | null>(null);
   const [hoveredGridPoint, setHoveredGridPoint] = useState<[number, number, number] | null>(null);
@@ -101,100 +101,20 @@ const InfiniteGrid: React.FC<{
   // }, [waitingForPathEndpoint, onWaitingForPathEndpointChange]);
 
 
-  const handleGridPointClick = useCallback((position: [number, number, number]) => {
-    // Handle path creation mode
-    if (pathCreationMode?.isActive && pathCreationMode.startPosition) {
-      const startPos = pathCreationMode.startPosition;
-      
-      // Don't allow selecting the start position as endpoint
-      if (position[0] === startPos[0] && position[1] === startPos[1] && position[2] === startPos[2]) {
-        if (onPathCreationError) {
-          onPathCreationError('Cannot select the start point as the endpoint');
-        }
-        return;
-      }
-      
-      if (pathCreationMode.type === 'line') {
-        // Check if the clicked point is a valid endpoint
-        const validEndpoints = getValidLineEndpoints(startPos, gridSize);
-        const isValidEndpoint = validEndpoints.some(ep => 
-          ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
-        );
-        
-        if (isValidEndpoint && onPathCreationComplete) {
-          // Complete the path creation
-          onPathCreationComplete(startPos, position, pathCreationMode.pathType, pathCreationMode.pathLabel);
-        } else if (onPathCreationError) {
-          // Show error toast
-          onPathCreationError('Please select a valid endpoint. Valid endpoints are points directly through the start point (straight or diagonal).');
-        }
-      }
-      return;
-    }
-
-    // Check if this grid point is lit by a path - if so, select that path
-    const pathWithThisTile = placedPaths.find(path => 
-      path.litTiles && path.litTiles.some(tile => 
-        tile[0] === position[0] && tile[1] === position[1] && tile[2] === position[2]
-      )
-    );
-
-    if (pathWithThisTile) {
-      // This tile is lit by a path - select the path and open drawer
-      // Pass litTiles as points for display purposes (since drawer expects points)
-      onSelectItem({
-        type: 'path',
-        id: pathWithThisTile.id,
-        pathType: pathWithThisTile.pathType,
-        label: pathWithThisTile.pathLabel,
-        name: pathWithThisTile.name,
-        points: pathWithThisTile.litTiles || [] // Pass litTiles as points for drawer display
-      });
-      return;
-    }
-
-    // If not a lit tile, treat as coordinate click
-    setSelectedGridPoint(position);
-    
-    // Register coordinate if registry is available
-    let coordinateId = `coord_${position[0]}_${position[1]}_${position[2]}`;
-    let coordinateName: string | undefined = undefined;
-    
-    if (coordinateRegistry) {
-      const coord = coordinateRegistry.getOrCreate(position);
-      coordinateId = coord.id;
-      coordinateName = coord.name;
-      if (onCoordinatesChange) {
-        onCoordinatesChange(coordinateRegistry.getAll());
-      }
-    }
-    
-    onSelectItem({
-      type: 'coordinate',
-      id: coordinateId,
-      position: position,
-      name: coordinateName
-    });
-    
-    // Add a new object at this grid point
-    const newObject = {
-      id: `obj_${Date.now()}`,
-      position: position,
-      targetId: `target_${Date.now()}`,
-      targetLabel: 'Target'
-    };
-    
-    // Register coordinate and create relationship
-    if (coordinateRegistry && relationshipManager) {
-      const coord = coordinateRegistry.getOrCreate(position);
-      relationshipManager.attachTargetToCoordinate(newObject.id, coord.id);
-      if (onCoordinatesChange) {
-        onCoordinatesChange(coordinateRegistry.getAll());
-      }
-    }
-    
-    onPlacedObjectsChange([...placedObjects, newObject]);
-  }, [placedPaths, placedObjects, onPlacedObjectsChange, onSelectItem, pathCreationMode, gridSize, onPathCreationComplete, onPathCreationError, coordinateRegistry, relationshipManager, onCoordinatesChange]);
+  // Use grid interaction hook
+  const { handleGridPointClick } = useGridInteraction({
+    gridSize,
+    placedPaths,
+    placedObjects,
+    pathCreationMode,
+    coordinateRegistry,
+    relationshipManager,
+    onPlacedObjectsChange,
+    onSelectItem,
+    onCoordinatesChange,
+    onPathCreationComplete,
+    onPathCreationError,
+  });
 
   // Track mouse position globally (same approach as DragTooltip)
   const { position: mousePosition, positionRef: mousePositionRef } = useMousePosition();
@@ -612,26 +532,23 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
   const [isPathBuilderOpen, setIsPathBuilderOpen] = useState(false);
   const [builderPosition, setBuilderPosition] = useState<[number, number, number] | null>(null);
 
-  // Path creation mode state
-  const [pathCreationMode, setPathCreationMode] = useState<{
-    isActive: boolean;
-    type: 'line' | 'curve' | null;
-    startPosition: [number, number, number] | null;
-    pathType: string;
-    pathLabel: string;
-    pathName?: string;
-  }>({
-    isActive: false,
-    type: null,
-    startPosition: null,
-    pathType: '',
-    pathLabel: '',
-    pathName: undefined
-  });
-
   // Toaster for notifications
   const toasterRef = useRef<OverlayToaster | null>(null);
-  const pathCreationToastKeyRef = useRef<string | null>(null);
+
+  // Use path creation hook
+  const {
+    pathCreationMode,
+    setPathCreationMode,
+    startPathCreation,
+    completePathCreation,
+    cancelPathCreation,
+    showPathCreationError,
+  } = usePathCreation(placedPaths, setPlacedPaths, {
+    coordinateRegistry,
+    relationshipManager,
+    onCoordinatesChange,
+    toasterRef,
+  });
 
   const handleToggleAnnotation = useCallback((id: string) => {
     setOpenAnnotations(prev => {
@@ -702,176 +619,17 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
   }, [placedObjects, setPlacedObjects, handleToggleAnnotation, coordinateRegistry, relationshipManager, onCoordinatesChange]);
 
   const handleStartExistingPath = useCallback((position: [number, number, number], pathType: string, pathLabel: string) => {
-    // Enter path creation mode instead of creating path immediately
-    setPathCreationMode({
-      isActive: true,
-      type: pathType === 'path-line' ? 'line' : 'curve',
-      startPosition: position,
-      pathType: pathType,
-      pathLabel: pathLabel,
-      pathName: undefined
-    });
-    
-    // Show toast notification
-    if (toasterRef.current) {
-      const toastKey = toasterRef.current.show({
-        message: `Path creation mode: ${pathLabel}. Select an endpoint. Click this toast to exit path creation mode.`,
-        intent: 'primary',
-        timeout: 0, // Don't auto-dismiss
-        onDismiss: () => {
-          setPathCreationMode({
-            isActive: false,
-            type: null,
-            startPosition: null,
-            pathType: '',
-            pathLabel: '',
-            pathName: undefined
-          });
-          pathCreationToastKeyRef.current = null;
-        },
-        action: {
-          text: 'Cancel',
-          onClick: () => {
-            setPathCreationMode({
-              isActive: false,
-              type: null,
-              startPosition: null,
-              pathType: '',
-              pathLabel: ''
-            });
-            if (toasterRef.current && pathCreationToastKeyRef.current) {
-              toasterRef.current.dismiss(pathCreationToastKeyRef.current);
-            }
-            pathCreationToastKeyRef.current = null;
-          }
-        }
-      });
-      pathCreationToastKeyRef.current = toastKey;
-    }
-    
+    startPathCreation(position, pathType, pathLabel);
     setContextMenuState({ isOpen: false, position: null, menuPosition: null });
-  }, []);
+  }, [startPathCreation]);
 
   const handleCreatePathFromBuilder = useCallback((position: [number, number, number], pathData: { pathType: string; pathLabel: string; name?: string }) => {
-    // Enter path creation mode with builder data
-    setPathCreationMode({
-      isActive: true,
-      type: pathData.pathType === 'path-line' ? 'line' : 'curve',
-      startPosition: position,
-      pathType: pathData.pathType,
-      pathLabel: pathData.pathLabel,
-      pathName: pathData.name
-    });
-    
-    // Show toast notification
-    if (toasterRef.current) {
-      const toastKey = toasterRef.current.show({
-        message: `Path creation mode: ${pathData.pathLabel}. Select an endpoint. Click this toast to exit path creation mode.`,
-        intent: 'primary',
-        timeout: 0,
-        onDismiss: () => {
-          setPathCreationMode({
-            isActive: false,
-            type: null,
-            startPosition: null,
-            pathType: '',
-            pathLabel: '',
-            pathName: undefined
-          });
-          pathCreationToastKeyRef.current = null;
-        },
-        action: {
-          text: 'Cancel',
-          onClick: () => {
-            setPathCreationMode({
-              isActive: false,
-              type: null,
-              startPosition: null,
-              pathType: '',
-              pathLabel: ''
-            });
-            if (toasterRef.current && pathCreationToastKeyRef.current) {
-              toasterRef.current.dismiss(pathCreationToastKeyRef.current);
-            }
-            pathCreationToastKeyRef.current = null;
-          }
-        }
-      });
-      pathCreationToastKeyRef.current = toastKey;
-    }
-    
+    startPathCreation(position, pathData.pathType, pathData.pathLabel, pathData.name);
     setIsPathBuilderOpen(false);
     setContextMenuState({ isOpen: false, position: null, menuPosition: null });
-  }, []);
+  }, [startPathCreation]);
 
 
-  // Handle path creation completion
-  const handlePathCreationComplete = useCallback((startPosition: Position3D, endPosition: Position3D, pathType: string, pathLabel: string) => {
-    // Calculate all points on the line between start and end
-    const allPositions = calculateLinePoints(startPosition, endPosition);
-    const newPath = {
-      id: `path_${Date.now()}`,
-      points: [],
-      pathType: pathType,
-      pathLabel: pathLabel,
-      name: pathCreationMode.pathName,
-      litTiles: allPositions
-    };
-    
-    // Register coordinates and create relationships
-    if (coordinateRegistry && relationshipManager) {
-      const coords = allPositions.map(pos => coordinateRegistry.getOrCreate(pos));
-      relationshipManager.attachPathToCoordinates(newPath.id, coords.map(c => c.id));
-      if (onCoordinatesChange) {
-        onCoordinatesChange(coordinateRegistry.getAll());
-      }
-    }
-    
-    setPlacedPaths([...placedPaths, newPath]);
-    
-    // Exit path creation mode
-    setPathCreationMode({
-      isActive: false,
-      type: null,
-      startPosition: null,
-      pathType: '',
-      pathLabel: '',
-      pathName: undefined
-    });
-    
-    // Dismiss toast
-    if (toasterRef.current && pathCreationToastKeyRef.current) {
-      toasterRef.current.dismiss(pathCreationToastKeyRef.current);
-      pathCreationToastKeyRef.current = null;
-    }
-  }, [placedPaths, setPlacedPaths, coordinateRegistry, relationshipManager, onCoordinatesChange, pathCreationMode]);
-
-  // Handle path creation error
-  const handlePathCreationError = useCallback((message: string) => {
-    if (toasterRef.current) {
-      toasterRef.current.show({
-        message: message,
-        intent: 'danger',
-        timeout: 3000
-      });
-    }
-  }, []);
-
-  // Handle path creation cancel
-  const handlePathCreationCancel = useCallback(() => {
-    setPathCreationMode({
-      isActive: false,
-      type: null,
-      startPosition: null,
-      pathType: '',
-      pathLabel: '',
-      pathName: undefined
-    });
-    if (toasterRef.current && pathCreationToastKeyRef.current) {
-      toasterRef.current.dismiss(pathCreationToastKeyRef.current);
-      pathCreationToastKeyRef.current = null;
-    }
-  }, []);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -1046,9 +804,9 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           onCoordinatesChange={onCoordinatesChange}
           onContextMenuRequest={setContextMenuState}
           pathCreationMode={pathCreationMode}
-          onPathCreationComplete={handlePathCreationComplete}
-          onPathCreationCancel={handlePathCreationCancel}
-          onPathCreationError={handlePathCreationError}
+          onPathCreationComplete={completePathCreation}
+          onPathCreationCancel={cancelPathCreation}
+          onPathCreationError={showPathCreationError}
         />
         <OrbitControlsWrapper 
           waitingForPathEndpoint={!!waitingForPathEndpoint}
