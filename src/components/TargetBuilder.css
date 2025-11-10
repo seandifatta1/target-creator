@@ -1,0 +1,91 @@
+.target-builder-dialog {
+  min-width: 500px;
+  max-width: 600px;
+}
+
+.target-builder-content {
+  padding: 20px;
+}
+
+.target-builder-breadcrumbs {
+  margin-bottom: 10px;
+}
+
+.target-builder-breadcrumbs .bp3-breadcrumb.active {
+  color: #9b59b6;
+  font-weight: 600;
+}
+
+.target-builder-breadcrumbs .bp3-breadcrumb.completed {
+  color: #888;
+}
+
+.builder-step-content {
+  min-height: 250px;
+  padding: 20px 0;
+}
+
+.builder-step-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.builder-option-group {
+  margin-bottom: 20px;
+}
+
+.builder-option-group .bp3-label {
+  margin-bottom: 10px;
+  color: #a8c7e8;
+  font-weight: 600;
+}
+
+.builder-review-summary {
+  background: rgba(155, 89, 182, 0.1);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.review-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-item .bp3-label {
+  margin: 0;
+  color: #a8c7e8;
+  font-weight: 600;
+}
+
+.review-item span {
+  color: #fff;
+}
+
+.emoji-button:hover {
+  background: rgba(155, 89, 182, 0.3) !important;
+  border-color: rgba(155, 89, 182, 0.5) !important;
+}
+
+.emoji-button.selected {
+  background: rgba(155, 89, 182, 0.3) !important;
+  border-color: #9b59b6 !important;
+}
+
+.builder-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+
+

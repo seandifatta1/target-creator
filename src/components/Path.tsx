@@ -4,7 +4,9 @@ import * as THREE from 'three';
 
 export interface PathProps {
   id: string;
-  points: [number, number, number][]; // Array of points - can be single or multiple
+  points?: [number, number, number][]; // Array of points - can be single or multiple
+  start?: [number, number, number]; // Start point (convenience prop)
+  end?: [number, number, number]; // End point (convenience prop)
   pathType: string;
   pathLabel: string;
   color?: string;
@@ -14,13 +16,29 @@ export interface PathProps {
 
 const Path: React.FC<PathProps> = ({
   id,
-  points,
+  points: pointsProp,
+  start,
+  end,
   pathType,
   pathLabel,
   color = "#3498db",
   lineWidth = 3,
   onClick
 }) => {
+  // Convert start/end to points if provided
+  // points prop takes precedence over start/end
+  let points: [number, number, number][] = pointsProp || [];
+  
+  if (points.length === 0) {
+    if (start && end) {
+      // If start and end are provided, use them as points
+      points = [start, end];
+    } else if (start && !end) {
+      // If only start is provided, use it as a single point
+      points = [start];
+    }
+  }
+  
   // Validate points array
   if (!points || points.length === 0 || 
       !points.every(point => 

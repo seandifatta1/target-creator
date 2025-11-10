@@ -139,24 +139,39 @@ const App: React.FC = () => {
     { id: 'settings', label: 'Settings', onClick: () => console.log('Settings clicked') },
   ];
 
+  // Available targets and paths for context menu (from target/path browser)
+  const availableTargets = [
+    { id: 'target-1', label: 'Target 1', iconEmoji: '🎯' },
+    { id: 'target-2', label: 'Target 2', iconEmoji: '🎯' },
+    { id: 'target-3', label: 'Target 3', iconEmoji: '🎯' },
+    { id: 'target-4', label: 'Target 4', iconEmoji: '🎯' },
+    { id: 'target-5', label: 'Target 5', iconEmoji: '🎯' },
+  ];
+
+  const availablePaths = [
+    { id: 'path-line', label: 'Line', pathType: 'path-line' },
+  ];
+
   const rightMenuItems: HamburgerMenuItem[] = [
     {
       id: 'target-browser',
       label: 'Target browser',
-      children: [
-        { id: 'target-1', label: 'Target 1', icon: <span>🎯</span>, onClick: () => console.log('Target 1 clicked') },
-        { id: 'target-2', label: 'Target 2', icon: <span>🎯</span>, onClick: () => console.log('Target 2 clicked') },
-        { id: 'target-3', label: 'Target 3', icon: <span>🎯</span>, onClick: () => console.log('Target 3 clicked') },
-        { id: 'target-4', label: 'Target 4', icon: <span>🎯</span>, onClick: () => console.log('Target 4 clicked') },
-        { id: 'target-5', label: 'Target 5', icon: <span>🎯</span>, onClick: () => console.log('Target 5 clicked') },
-      ],
+      children: availableTargets.map(target => ({
+        id: target.id,
+        label: target.label,
+        icon: <span>{target.iconEmoji}</span>,
+        onClick: () => console.log(`${target.label} clicked`)
+      })),
     },
     {
       id: 'path-browser',
       label: 'Path browser',
-      children: [
-        { id: 'path-line', label: 'Line', icon: <span>📏</span>, onClick: () => console.log('Line clicked') },
-      ],
+      children: availablePaths.map(path => ({
+        id: path.id,
+        label: path.label,
+        icon: <span>📏</span>,
+        onClick: () => console.log(`${path.label} clicked`)
+      })),
     },
   ];
 
@@ -219,6 +234,8 @@ const App: React.FC = () => {
             onPlacedPathsChange={setPlacedPaths}
             placedObjects={placedObjects}
             placedPaths={placedPaths}
+            availableTargets={availableTargets}
+            availablePaths={availablePaths}
           />
         </div>
         <HamburgerMenu
