@@ -100,9 +100,6 @@ const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({
               {leftContent || children}
             </div>
             
-            {/* Vertical divider */}
-            <div className="drawer-divider" />
-            
             {/* Right side - Tabs with dropdowns */}
             <div className="drawer-right-panel">
               <Tabs
@@ -111,99 +108,8 @@ const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({
                 onChange={handleTabChange}
                 className="drawer-tabs"
               >
-                <Tab id="targets" title="Targets" panel={
-                  <div className="drawer-tab-content">
-                    <div className="drawer-dropdown-container">
-                      <label className="drawer-dropdown-label">Select Target:</label>
-                      <HTMLSelect
-                        value={selectedTargetId || ''}
-                        onChange={(e) => onTargetSelect?.(e.currentTarget.value)}
-                        fill
-                      >
-                        <option value="">Select...</option>
-                        {targets.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.name || t.label}
-                          </option>
-                        ))}
-                      </HTMLSelect>
-                    </div>
-                    <div className="drawer-tab-details">
-                      {/* Placeholder for selected target details */}
-                      {selectedTargetId ? (
-                        <div className="detail-section">
-                          <p>Target details will appear here</p>
-                        </div>
-                      ) : (
-                        <div className="detail-section">
-                          <p>Select a target from the dropdown</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                } />
-                <Tab id="paths" title="Paths" panel={
-                  <div className="drawer-tab-content">
-                    <div className="drawer-dropdown-container">
-                      <label className="drawer-dropdown-label">Select Path:</label>
-                      <HTMLSelect
-                        value={selectedPathId || ''}
-                        onChange={(e) => onPathSelect?.(e.currentTarget.value)}
-                        fill
-                      >
-                        <option value="">Select...</option>
-                        {paths.map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.name || p.label}
-                          </option>
-                        ))}
-                      </HTMLSelect>
-                    </div>
-                    <div className="drawer-tab-details">
-                      {/* Placeholder for selected path details */}
-                      {selectedPathId ? (
-                        <div className="detail-section">
-                          <p>Path details will appear here</p>
-                        </div>
-                      ) : (
-                        <div className="detail-section">
-                          <p>Select a path from the dropdown</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                } />
-                <Tab id="coordinates" title="Coordinates" panel={
-                  <div className="drawer-tab-content">
-                    <div className="drawer-dropdown-container">
-                      <label className="drawer-dropdown-label">Select Coordinate:</label>
-                      <HTMLSelect
-                        value={selectedCoordinateId || ''}
-                        onChange={(e) => onCoordinateSelect?.(e.currentTarget.value)}
-                        fill
-                      >
-                        <option value="">Select...</option>
-                        {coordinates.map(c => (
-                          <option key={c.id} value={c.id}>
-                            {c.name || `[${c.position[0]}, ${c.position[1]}, ${c.position[2]}]`}
-                          </option>
-                        ))}
-                      </HTMLSelect>
-                    </div>
-                    <div className="drawer-tab-details">
-                      {/* Placeholder for selected coordinate details */}
-                      {selectedCoordinateId ? (
-                        <div className="detail-section">
-                          <p>Coordinate details will appear here</p>
-                        </div>
-                      ) : (
-                        <div className="detail-section">
-                          <p>Select a coordinate from the dropdown</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                } />
+              
+                
               </Tabs>
             </div>
           </div>

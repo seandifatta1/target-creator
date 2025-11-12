@@ -35,13 +35,38 @@ export const WithTabs: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(true);
     const [activeTab, setActiveTab] = useState<'targets' | 'paths' | 'coordinates'>('targets');
-    const [selectedTargetId, setSelectedTargetId] = useState<string>('');
+    const [selectedTargetId, setSelectedTargetId] = useState<string>('target-1');
     const [selectedPathId, setSelectedPathId] = useState<string>('');
     const [selectedCoordinateId, setSelectedCoordinateId] = useState<string>('');
 
     const targets = [
-      { id: 'target-1', label: 'Main Target', name: 'Main Target' },
-      { id: 'target-2', label: 'Secondary Target', name: 'Secondary Target' },
+      { 
+        id: 'target-1', 
+        label: 'Main Target', 
+        name: 'Main Target',
+        targetType: 'Primary Objective',
+        startTime: '2024-01-15 08:00:00',
+        endTime: '2024-01-15 17:00:00',
+        associatedPathName: 'Main Corridor'
+      },
+      { 
+        id: 'target-2', 
+        label: 'Secondary Target', 
+        name: 'Secondary Target',
+        targetType: 'Secondary Objective',
+        startTime: '2024-01-15 09:30:00',
+        endTime: '2024-01-15 16:00:00',
+        associatedPathName: 'Side Path'
+      },
+      {
+        id: 'target-3',
+        label: 'Checkpoint Alpha',
+        name: 'Checkpoint Alpha',
+        targetType: 'Checkpoint',
+        startTime: '2024-01-15 10:00:00',
+        endTime: '2024-01-15 15:30:00',
+        associatedPathName: 'Main Corridor'
+      },
     ];
 
     const paths = [
@@ -69,12 +94,6 @@ export const WithTabs: Story = {
         onTargetSelect={setSelectedTargetId}
         onPathSelect={setSelectedPathId}
         onCoordinateSelect={setSelectedCoordinateId}
-        leftContent={
-          <div style={{ padding: '20px' }}>
-            <h3>Item Details</h3>
-            <p>Selected item details appear here</p>
-          </div>
-        }
       />
     );
   },
@@ -84,6 +103,7 @@ export const WithSplitLayout: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(true);
     const [activeTab, setActiveTab] = useState<'targets' | 'paths' | 'coordinates'>('targets');
+    const [selectedTargetId, setSelectedTargetId] = useState<string>('target-1');
 
     return (
       <GridItemDetailsDrawer
@@ -92,8 +112,24 @@ export const WithSplitLayout: Story = {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         targets={[
-          { id: 'target-1', label: 'Target 1', name: 'Target 1' },
-          { id: 'target-2', label: 'Target 2', name: 'Target 2' },
+          { 
+            id: 'target-1', 
+            label: 'Target 1', 
+            name: 'Target 1',
+            targetType: 'Primary Objective',
+            startTime: '2024-01-15 08:00:00',
+            endTime: '2024-01-15 17:00:00',
+            associatedPathName: 'Path 1'
+          },
+          { 
+            id: 'target-2', 
+            label: 'Target 2', 
+            name: 'Target 2',
+            targetType: 'Secondary Objective',
+            startTime: '2024-01-15 09:00:00',
+            endTime: '2024-01-15 16:00:00',
+            associatedPathName: 'Path 1'
+          },
         ]}
         paths={[
           { id: 'path-1', label: 'Path 1', name: 'Path 1' },
@@ -101,13 +137,8 @@ export const WithSplitLayout: Story = {
         coordinates={[
           { id: 'coord-1', position: [0, 0, 0] as [number, number, number] },
         ]}
-        leftContent={
-          <div style={{ padding: '20px' }}>
-            <h3>Selected Item</h3>
-            <p>Details about the selected item appear in this left panel.</p>
-            <p>This panel shows information about targets, paths, or coordinates.</p>
-          </div>
-        }
+        selectedTargetId={selectedTargetId}
+        onTargetSelect={setSelectedTargetId}
       />
     );
   },
