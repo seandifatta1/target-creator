@@ -213,11 +213,13 @@ const App: React.FC = () => {
             })() : { targets: [], paths: [], coordinates: [] }}
             onSelectItem={(item) => {
               setSelectedItem(item);
-              // Set active tab based on item type
+              // Set active tab and selected IDs based on item type
               if (item) {
                 if (item.type === 'target') {
-                  setActiveTab('targets');
                   setSelectedTargetId(item.id);
+                  setSelectedPathId(undefined);
+                  setSelectedCoordinateId(undefined);
+                  setActiveTab('targets');
                 } else if (item.type === 'path') {
                   setActiveTab('paths');
                   setSelectedPathId(item.id);
@@ -784,10 +786,7 @@ const App: React.FC = () => {
             )}
           </div>
         ) : undefined}
-        targets={placedObjects.map(obj => ({ id: obj.id, name: obj.name, label: obj.targetLabel }))}
-        paths={placedPaths.map(path => ({ id: path.id, name: path.name, label: path.pathLabel }))}
-        coordinates={coordinates.map(coord => ({ id: coord.id, name: coord.name, position: coord.position }))}
-        selectedTargetId={selectedTargetId}
+        selectedTargetId={selectedItem?.type === 'target' ? selectedItem.id : selectedTargetId}
         selectedPathId={selectedPathId}
         selectedCoordinateId={selectedCoordinateId}
         onTargetSelect={(id) => {

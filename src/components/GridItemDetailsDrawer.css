@@ -141,56 +141,145 @@
   border-right: 1px solid rgba(155, 89, 182, 0.2);
 }
 
-/* Target details styling */
-.drawer-target-details {
+/* Target properties styling - Left panel */
+.drawer-target-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer-target-properties-title {
+  margin: 0 0 16px 0 !important;
+  color: #9b59b6 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+}
+
+.drawer-target-properties-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.drawer-target-details-title {
-  margin: 0 0 12px 0 !important;
-  color: #9b59b6 !important;
-  font-size: 18px !important;
-  font-weight: 600 !important;
+.drawer-property-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.15);
 }
 
-.drawer-target-details-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.drawer-target-details-table tbody tr {
-  border-bottom: 1px solid rgba(155, 89, 182, 0.2);
-}
-
-.drawer-target-details-table tbody tr:last-child {
+.drawer-property-item:last-child {
   border-bottom: none;
 }
 
-.drawer-target-details-label {
-  padding: 10px 12px !important;
+.drawer-property-label {
   font-weight: 600 !important;
   color: #94a3b8 !important;
-  font-size: 14px !important;
-  width: 40%;
-  vertical-align: top;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.drawer-target-details-value {
-  padding: 10px 12px !important;
+.drawer-property-value {
   color: #e2e8f0 !important;
-  font-size: 14px !important;
-  vertical-align: top;
+  font-size: 15px !important;
+  font-family: 'Courier New', monospace;
+  word-break: break-word;
 }
 
 .drawer-target-details-empty {
-  padding: 20px;
+  padding: 40px 20px;
   text-align: center;
   color: #94a3b8 !important;
 }
 
 .drawer-target-details-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Coordinates table styling - Right panel */
+.drawer-coordinates-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.drawer-coordinates-table-title {
+  margin: 0 0 12px 0 !important;
+  color: #9b59b6 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+}
+
+.drawer-coordinates-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.drawer-coordinates-table thead {
+  background: rgba(155, 89, 182, 0.2);
+}
+
+.drawer-coordinates-table thead th {
+  padding: 12px 16px !important;
+  text-align: left;
+  font-weight: 600 !important;
+  color: #9b59b6 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(155, 89, 182, 0.3);
+}
+
+.drawer-coordinates-table tbody tr {
+  border-bottom: 1px solid rgba(155, 89, 182, 0.15);
+  transition: background-color 0.2s;
+}
+
+.drawer-coordinates-table tbody tr:hover {
+  background: rgba(155, 89, 182, 0.1);
+}
+
+.drawer-coordinates-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.drawer-coordinates-table tbody td {
+  padding: 12px 16px !important;
+  color: #e2e8f0 !important;
+  font-size: 14px !important;
+}
+
+.drawer-coordinates-table tbody td:first-child {
+  font-weight: 600;
+  color: #94a3b8;
+  font-family: 'Courier New', monospace;
+}
+
+.drawer-coordinates-table tbody td:nth-child(2),
+.drawer-coordinates-table tbody td:nth-child(3),
+.drawer-coordinates-table tbody td:nth-child(4) {
+  font-family: 'Courier New', monospace;
+  color: #9b59b6;
+}
+
+.drawer-coordinates-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8 !important;
+}
+
+.drawer-coordinates-empty p {
   margin: 0;
   font-size: 14px;
 }

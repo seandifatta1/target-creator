@@ -2,6 +2,8 @@ import * as React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import GridItemDetailsDrawer from './GridItemDetailsDrawer';
+import { GridItemsService } from '../services/GridItemsService';
+import type { Target, Path, Coordinate } from '../types/gridItems';
 
 const meta: Meta<typeof GridItemDetailsDrawer> = {
   title: 'Components/GridItemDetailsDrawer',
@@ -14,7 +16,82 @@ const meta: Meta<typeof GridItemDetailsDrawer> = {
 export default meta;
 type Story = StoryObj<typeof GridItemDetailsDrawer>;
 
-export const Default: Story = {
+// Helper function to create a service with test data
+const createTestService = (): GridItemsService => {
+  const service = new GridItemsService();
+  
+  // Create coordinates
+  const coord1: Coordinate = {
+    id: 'coord-1',
+    label: 'Origin',
+    position: [0, 0, 0],
+    paths: [],
+    targets: [],
+  };
+  const coord2: Coordinate = {
+    id: 'coord-2',
+    label: 'Midpoint',
+    position: [5, 0, 5],
+    paths: [],
+    targets: [],
+  };
+  const coord3: Coordinate = {
+    id: 'coord-3',
+    label: 'Destination',
+    position: [10, 0, 10],
+    paths: [],
+    targets: [],
+  };
+  const coord4: Coordinate = {
+    id: 'coord-4',
+    label: 'Side Point',
+    position: [3, 0, 3],
+    paths: [],
+    targets: [],
+  };
+  
+  service.createCoordinate(coord1);
+  service.createCoordinate(coord2);
+  service.createCoordinate(coord3);
+  service.createCoordinate(coord4);
+  
+  // Create path
+  const path: Path = {
+    id: 'path-1',
+    label: 'Main Corridor',
+    targetId: 'target-1',
+    coordinates: [coord1, coord2, coord3],
+  };
+  service.createPath(path);
+  
+  // Create another path
+  const path2: Path = {
+    id: 'path-2',
+    label: 'Side Path',
+    targetId: 'target-2',
+    coordinates: [coord1, coord4],
+  };
+  service.createPath(path2);
+  
+  // Create targets
+  const target1: Target = {
+    id: 'target-1',
+    label: 'Main Target',
+    pathId: 'path-1',
+  };
+  service.createTarget(target1);
+  
+  const target2: Target = {
+    id: 'target-2',
+    label: 'Secondary Target',
+    pathId: 'path-2',
+  };
+  service.createTarget(target2);
+  
+  return service;
+};
+
+export const empty: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(true);
     return (
@@ -23,128 +100,16 @@ export const Default: Story = {
         onClose={() => setIsOpen(false)}
         title="Item Details"
       >
-        <div style={{ padding: '20px' }}>
-          <p>Default drawer content</p>
+        <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+          <p>No item selected</p>
+          <p style={{ fontSize: '14px', marginTop: '8px' }}>Select an item from the grid to view details</p>
         </div>
       </GridItemDetailsDrawer>
     );
   },
 };
 
-export const WithTabs: Story = {
-  render: () => {
-    const [isOpen, setIsOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState<'targets' | 'paths' | 'coordinates'>('targets');
-    const [selectedTargetId, setSelectedTargetId] = useState<string>('target-1');
-    const [selectedPathId, setSelectedPathId] = useState<string>('');
-    const [selectedCoordinateId, setSelectedCoordinateId] = useState<string>('');
-
-    const targets = [
-      { 
-        id: 'target-1', 
-        label: 'Main Target', 
-        name: 'Main Target',
-        targetType: 'Primary Objective',
-        startTime: '2024-01-15 08:00:00',
-        endTime: '2024-01-15 17:00:00',
-        associatedPathName: 'Main Corridor'
-      },
-      { 
-        id: 'target-2', 
-        label: 'Secondary Target', 
-        name: 'Secondary Target',
-        targetType: 'Secondary Objective',
-        startTime: '2024-01-15 09:30:00',
-        endTime: '2024-01-15 16:00:00',
-        associatedPathName: 'Side Path'
-      },
-      {
-        id: 'target-3',
-        label: 'Checkpoint Alpha',
-        name: 'Checkpoint Alpha',
-        targetType: 'Checkpoint',
-        startTime: '2024-01-15 10:00:00',
-        endTime: '2024-01-15 15:30:00',
-        associatedPathName: 'Main Corridor'
-      },
-    ];
-
-    const paths = [
-      { id: 'path-1', label: 'Main Corridor', name: 'Main Corridor' },
-      { id: 'path-2', label: 'Side Path', name: 'Side Path' },
-    ];
-
-    const coordinates = [
-      { id: 'coord-1', position: [0, 0, 0] as [number, number, number], name: 'Origin' },
-      { id: 'coord-2', position: [5, 0, 5] as [number, number, number], name: 'Corner' },
-    ];
-
-    return (
-      <GridItemDetailsDrawer
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        targets={targets}
-        paths={paths}
-        coordinates={coordinates}
-        selectedTargetId={selectedTargetId}
-        selectedPathId={selectedPathId}
-        selectedCoordinateId={selectedCoordinateId}
-        onTargetSelect={setSelectedTargetId}
-        onPathSelect={setSelectedPathId}
-        onCoordinateSelect={setSelectedCoordinateId}
-      />
-    );
-  },
-};
-
-export const WithSplitLayout: Story = {
-  render: () => {
-    const [isOpen, setIsOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState<'targets' | 'paths' | 'coordinates'>('targets');
-    const [selectedTargetId, setSelectedTargetId] = useState<string>('target-1');
-
-    return (
-      <GridItemDetailsDrawer
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        targets={[
-          { 
-            id: 'target-1', 
-            label: 'Target 1', 
-            name: 'Target 1',
-            targetType: 'Primary Objective',
-            startTime: '2024-01-15 08:00:00',
-            endTime: '2024-01-15 17:00:00',
-            associatedPathName: 'Path 1'
-          },
-          { 
-            id: 'target-2', 
-            label: 'Target 2', 
-            name: 'Target 2',
-            targetType: 'Secondary Objective',
-            startTime: '2024-01-15 09:00:00',
-            endTime: '2024-01-15 16:00:00',
-            associatedPathName: 'Path 1'
-          },
-        ]}
-        paths={[
-          { id: 'path-1', label: 'Path 1', name: 'Path 1' },
-        ]}
-        coordinates={[
-          { id: 'coord-1', position: [0, 0, 0] as [number, number, number] },
-        ]}
-        selectedTargetId={selectedTargetId}
-        onTargetSelect={setSelectedTargetId}
-      />
-    );
-  },
-};
-
-export const Closed: Story = {
+export const close: Story = {
   render: () => {
     return (
       <GridItemDetailsDrawer
@@ -156,6 +121,54 @@ export const Closed: Story = {
           <p>This drawer is closed</p>
         </div>
       </GridItemDetailsDrawer>
+    );
+  },
+};
+
+export const targetSelected: Story = {
+  name: 'target selected',
+  render: () => {
+    const service = React.useMemo(() => createTestService(), []);
+    return (
+      <GridItemDetailsDrawer
+        isOpen={true}
+        onClose={() => {}}
+        title="Main Target"
+        selectedTargetId="target-1"
+        service={service}
+      />
+    );
+  },
+};
+
+export const pathSelected: Story = {
+  name: 'path selected',
+  render: () => {
+    const service = React.useMemo(() => createTestService(), []);
+    return (
+      <GridItemDetailsDrawer
+        isOpen={true}
+        onClose={() => {}}
+        title="Main Corridor"
+        selectedPathId="path-1"
+        service={service}
+      />
+    );
+  },
+};
+
+export const coordinateSelected: Story = {
+  name: 'coordinate selected',
+  render: () => {
+    const service = React.useMemo(() => createTestService(), []);
+    return (
+      <GridItemDetailsDrawer
+        isOpen={true}
+        onClose={() => {}}
+        title="Origin"
+        selectedCoordinateId="coord-1"
+        service={service}
+      />
     );
   },
 };
