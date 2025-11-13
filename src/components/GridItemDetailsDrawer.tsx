@@ -6,6 +6,15 @@ import type { IGridItemsService } from '../services/GridItemsService';
 import type { Target, Path, Coordinate } from '../types/gridItems';
 import './GridItemDetailsDrawer.css';
 
+export interface PathData {
+  id: string;
+  points: [number, number, number][];
+  pathType: string;
+  pathLabel: string;
+  name?: string;
+  litTiles: [number, number, number][];
+}
+
 export interface GridItemDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,6 +34,8 @@ export interface GridItemDetailsDrawerProps {
   onCoordinateSelect?: (id: string) => void;
   // Optional service for dependency injection (testing/storybook)
   service?: IGridItemsService;
+  // Fallback data sources when service doesn't have the data
+  placedPaths?: PathData[];
 }
 
 /**
@@ -66,7 +77,8 @@ const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({
   onTargetSelect,
   onPathSelect,
   onCoordinateSelect,
-  service
+  service,
+  placedPaths = []
 }) => {
   const { 
     getTarget, 
@@ -91,7 +103,30 @@ const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({
 
   // Get data based on what's selected
   const target: Target | null = selectedTargetId ? getTarget(selectedTargetId) : null;
-  const selectedPath: Path | null = selectedPathId ? getPath(selectedPathId) : null;
+  
+  // Try to get path from service first, then fallback to placedPaths
+  let selectedPath: Path | null = selectedPathId ? getPath(selectedPathId) : null;
+  if (!selectedPath && selectedPathId) {
+    // Convert PathData to Path format for display
+    const pathData = placedPaths.find(p => p.id === selectedPathId);
+    if (pathData) {
+      // Convert litTiles (positions) to Coordinate objects
+      const coordinates: Coordinate[] = pathData.litTiles.map((pos, index) => ({
+        id: `coord-${pathData.id}-${index}`,
+        label: `[${pos[0]}, ${pos[1]}, ${pos[2]}]`,
+        position: pos,
+        paths: [],
+        targets: []
+      }));
+      selectedPath = {
+        id: pathData.id,
+        label: pathData.pathLabel,
+        targetId: '', // PathData doesn't have targetId
+        coordinates: coordinates
+      };
+    }
+  }
+  
   const selectedCoordinate: Coordinate | null = selectedCoordinateId ? getCoordinate(selectedCoordinateId) : null;
   
   // Get related data

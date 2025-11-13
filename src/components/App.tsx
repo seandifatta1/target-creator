@@ -264,6 +264,7 @@ const App: React.FC = () => {
         selectedTargetId={selectedItem?.type === 'target' ? selectedItem.id : selectedTargetId}
         selectedPathId={selectedPathId}
         selectedCoordinateId={selectedCoordinateId}
+        placedPaths={placedPaths}
         onTargetSelect={(id) => {
           setSelectedTargetId(id);
           setActiveTab('targets');
