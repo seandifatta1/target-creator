@@ -96,7 +96,10 @@ const GridItemDetailsDrawer: React.FC<GridItemDetailsDrawerProps> = ({
   
   // Get related data
   const path = target ? getTargetPath(target.id) : selectedPath;
-  const coordinates: Coordinate[] = path ? getCoordinatesByPath(path.id) : [];
+  // When a path is selected, use its coordinates directly; otherwise fetch from service
+  const coordinates: Coordinate[] = selectedPath 
+    ? selectedPath.coordinates 
+    : (path ? getCoordinatesByPath(path.id) : []);
   
   // For coordinate selection, get paths and targets that go through it
   const pathsThroughCoordinate: Path[] = selectedCoordinate && selectedCoordinate.id 
