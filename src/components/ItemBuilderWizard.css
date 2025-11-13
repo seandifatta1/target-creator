@@ -1,0 +1,148 @@
+/* ItemBuilderWizard Dialog styling - matches app theme */
+.item-builder-wizard-dialog.bp3-dialog,
+.item-builder-wizard-dialog.bp6-dialog,
+.bp3-dialog.item-builder-wizard-dialog,
+.bp6-dialog.item-builder-wizard-dialog {
+  background: rgba(0, 0, 0, 0.85) !important;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  background-image: none !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(155, 89, 182, 0.1) !important;
+  border-radius: 12px !important;
+}
+
+.item-builder-wizard-dialog .bp3-overlay-backdrop,
+.item-builder-wizard-dialog .bp6-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.item-builder-wizard-dialog .bp3-dialog-header,
+.item-builder-wizard-dialog .bp6-dialog-header,
+.item-builder-wizard-dialog.bp3-dialog .bp3-dialog-header,
+.item-builder-wizard-dialog.bp6-dialog .bp6-dialog-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
+  padding: 20px 24px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.item-builder-wizard-dialog .bp3-dialog-header .bp3-heading,
+.item-builder-wizard-dialog .bp6-dialog-header .bp6-heading,
+.item-builder-wizard-dialog .bp3-heading,
+.item-builder-wizard-dialog .bp6-heading {
+  color: #9b59b6 !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.item-builder-wizard-dialog .bp3-dialog-header .bp3-icon,
+.item-builder-wizard-dialog .bp6-dialog-header .bp6-icon,
+.item-builder-wizard-dialog .bp3-icon,
+.item-builder-wizard-dialog .bp6-icon {
+  color: #9b59b6 !important;
+}
+
+.item-builder-wizard-dialog .bp3-dialog-body,
+.item-builder-wizard-dialog .bp6-dialog-body {
+  padding: 24px !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
+}
+
+.item-builder-wizard-content {
+  padding: 0;
+}
+
+.item-builder-wizard-step {
+  min-height: 200px;
+}
+
+.item-builder-wizard-step .bp3-label,
+.item-builder-wizard-step .bp6-label {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+}
+
+.item-builder-wizard-items {
+  margin-top: 16px;
+}
+
+.item-builder-wizard-items .bp3-radio,
+.item-builder-wizard-items .bp6-radio {
+  color: #e2e8f0 !important;
+  margin-bottom: 8px !important;
+}
+
+.item-builder-wizard-items .bp3-radio .bp3-control-indicator,
+.item-builder-wizard-items .bp6-radio .bp6-control-indicator {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+}
+
+.item-builder-wizard-items .bp3-radio input:checked ~ .bp3-control-indicator,
+.item-builder-wizard-items .bp6-radio input:checked ~ .bp6-control-indicator {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+.item-builder-wizard-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.item-builder-wizard-dialog .bp3-button,
+.item-builder-wizard-dialog .bp6-button {
+  color: #e2e8f0 !important;
+}
+
+.item-builder-wizard-dialog .bp3-button.bp3-intent-primary,
+.item-builder-wizard-dialog .bp6-button.bp6-intent-primary {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+.item-builder-wizard-dialog .bp3-button.bp3-intent-primary:hover,
+.item-builder-wizard-dialog .bp6-button.bp6-intent-primary:hover {
+  background: #8e44ad !important;
+  border-color: #8e44ad !important;
+}
+
+.item-builder-wizard-dialog .bp3-radio-group,
+.item-builder-wizard-dialog .bp6-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-builder-wizard-dialog .bp3-radio,
+.item-builder-wizard-dialog .bp6-radio {
+  color: #e2e8f0 !important;
+}
+
+.item-builder-wizard-dialog .bp3-radio .bp3-control-indicator,
+.item-builder-wizard-dialog .bp6-radio .bp6-control-indicator {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+}
+
+.item-builder-wizard-dialog .bp3-radio input:checked ~ .bp3-control-indicator,
+.item-builder-wizard-dialog .bp6-radio input:checked ~ .bp6-control-indicator {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+.item-builder-wizard-dialog .bp3-divider,
+.item-builder-wizard-dialog .bp6-divider {
+  border-color: rgba(155, 89, 182, 0.2) !important;
+}
+

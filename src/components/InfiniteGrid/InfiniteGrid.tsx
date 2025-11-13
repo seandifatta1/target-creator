@@ -7,6 +7,7 @@ import SettingsModal, { CoordinateSettings } from '../SettingsModal';
 import NameModal from '../NameModal';
 import TargetBuilder from '../TargetBuilder';
 import PathBuilder from '../PathBuilder';
+import ItemBuilderWizard, { ItemType } from '../ItemBuilderWizard';
 import { OrbitControlsWrapper } from '../OrbitControlsWrapper';
 import { DragTooltip } from '../DragTooltip';
 import InfiniteGridScene from './InfiniteGridScene';
@@ -127,6 +128,17 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
   const [isTargetBuilderOpen, setIsTargetBuilderOpen] = useState(false);
   const [isPathBuilderOpen, setIsPathBuilderOpen] = useState(false);
   const [builderPosition, setBuilderPosition] = useState<[number, number, number] | null>(null);
+
+  // Item builder wizard state
+  const [itemBuilderWizard, setItemBuilderWizard] = useState<{
+    isOpen: boolean;
+    itemType: ItemType | null;
+    position: [number, number, number] | null;
+  }>({
+    isOpen: false,
+    itemType: null,
+    position: null,
+  });
 
   // Toaster for notifications
   const toasterRef = useRef<OverlayToaster | null>(null);
@@ -452,71 +464,31 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
           }}
         >
           <Menu className="grid-context-menu">
-            {/* Targets Section */}
             <MenuItem
               icon="target"
               text="Add Target"
-            >
-              {availableTargets.length > 0 ? (
-                availableTargets.map(target => (
-                  <MenuItem
-                    key={target.id}
-                    icon={<span>{target.iconEmoji || '🎯'}</span>}
-                    text={target.label}
-                    onClick={() => {
-                      if (contextMenuState.position) {
-                        handleAddExistingTarget(contextMenuState.position, target.id, target.label, target.iconEmoji);
-                      }
-                    }}
-                  />
-                ))
-              ) : (
-                <MenuItem text="No targets available" disabled />
-              )}
-            </MenuItem>
-            <MenuItem
-              icon="add"
-              text="Create Target"
               onClick={() => {
                 if (contextMenuState.position) {
-                  setBuilderPosition(contextMenuState.position);
-                  setIsTargetBuilderOpen(true);
+                  setItemBuilderWizard({
+                    isOpen: true,
+                    itemType: 'target',
+                    position: contextMenuState.position,
+                  });
                   setContextMenuState({ isOpen: false, position: null, menuPosition: null });
                 }
               }}
             />
             
-            <MenuDivider />
-            
-            {/* Paths Section */}
             <MenuItem
               icon="path-search"
               text="Add Path"
-            >
-              {availablePaths.length > 0 ? (
-                availablePaths.map(path => (
-                  <MenuItem
-                    key={path.id}
-                    icon="path-search"
-                    text={path.label}
-                    onClick={() => {
-                      if (contextMenuState.position) {
-                        handleStartExistingPath(contextMenuState.position, path.pathType, path.label);
-                      }
-                    }}
-                  />
-                ))
-              ) : (
-                <MenuItem text="No paths available" disabled />
-              )}
-            </MenuItem>
-            <MenuItem
-              icon="add"
-              text="Create Path"
               onClick={() => {
                 if (contextMenuState.position) {
-                  setBuilderPosition(contextMenuState.position);
-                  setIsPathBuilderOpen(true);
+                  setItemBuilderWizard({
+                    isOpen: true,
+                    itemType: 'path',
+                    position: contextMenuState.position,
+                  });
                   setContextMenuState({ isOpen: false, position: null, menuPosition: null });
                 }
               }}
@@ -577,6 +549,48 @@ const InfiniteGridCanvas: React.FC<InfiniteGridCanvasProps> = ({
             }
           }}
           position={builderPosition}
+        />
+      )}
+
+      {/* Item Builder Wizard */}
+      {itemBuilderWizard.position && (
+        <ItemBuilderWizard
+          isOpen={itemBuilderWizard.isOpen}
+          onClose={() => {
+            setItemBuilderWizard({ isOpen: false, itemType: null, position: null });
+          }}
+          itemType={itemBuilderWizard.itemType!}
+          position={itemBuilderWizard.position}
+          availableItems={
+            itemBuilderWizard.itemType === 'target'
+              ? availableTargets.map(t => ({ id: t.id, label: t.label, iconEmoji: t.iconEmoji }))
+              : availablePaths.map(p => ({ id: p.id, label: p.label, pathType: p.pathType }))
+          }
+          onSelectExisting={(item) => {
+            if (itemBuilderWizard.itemType === 'target' && itemBuilderWizard.position) {
+              handleAddExistingTarget(
+                itemBuilderWizard.position,
+                item.id,
+                item.label,
+                item.iconEmoji
+              );
+            } else if (itemBuilderWizard.itemType === 'path' && itemBuilderWizard.position) {
+              handleStartExistingPath(
+                itemBuilderWizard.position,
+                item.pathType || 'path-line',
+                item.label
+              );
+            }
+          }}
+          onCreateNew={() => {
+            if (itemBuilderWizard.itemType === 'target' && itemBuilderWizard.position) {
+              setBuilderPosition(itemBuilderWizard.position);
+              setIsTargetBuilderOpen(true);
+            } else if (itemBuilderWizard.itemType === 'path' && itemBuilderWizard.position) {
+              setBuilderPosition(itemBuilderWizard.position);
+              setIsPathBuilderOpen(true);
+            }
+          }}
         />
       )}
 
