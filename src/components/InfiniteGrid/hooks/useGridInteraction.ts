@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Position3D, getValidLineEndpoints } from '../../../utils/gridUtils';
+import { Position3D, getValidLineEndpoints, calculateLinePoints } from '../../../utils/gridUtils';
 import { ICoordinateRegistry } from '../../../services/CoordinateRegistry';
 import { IRelationshipManager } from '../../../services/RelationshipManager';
 
@@ -160,16 +160,17 @@ export function useGridInteraction(
         }
 
         if (pathCreationMode.type === 'line') {
-          // Check if the clicked point is a valid endpoint
-          const validEndpoints = getValidLineEndpoints(roundedStartPos, gridSize);
-          const isValidEndpoint = validEndpoints.some(
-            (ep) =>
-              ep[0] === roundedPosition[0] && 
-              ep[1] === roundedPosition[1] && 
-              ep[2] === roundedPosition[2]
-          );
+          // Validate using the EXACT same logic that creates the path
+          // If calculateLinePoints can generate the path, it's valid
+          const calculatedPoints = calculateLinePoints(roundedStartPos, roundedPosition);
+          
+          // Check if the endpoint is in the calculated path (it should always be the last point)
+          const endpointInPath = calculatedPoints.length > 0 && 
+            calculatedPoints[calculatedPoints.length - 1][0] === roundedPosition[0] &&
+            calculatedPoints[calculatedPoints.length - 1][1] === roundedPosition[1] &&
+            calculatedPoints[calculatedPoints.length - 1][2] === roundedPosition[2];
 
-          if (isValidEndpoint && onPathCreationComplete) {
+          if (endpointInPath && onPathCreationComplete) {
             // Complete the path creation (use rounded positions)
             onPathCreationComplete(
               roundedStartPos,

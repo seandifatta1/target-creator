@@ -68,7 +68,12 @@ export const GridPoint: React.FC<GridPointProps> = ({
       ref={meshRef}
       position={position}
       args={[0.8, 0.8, 0.8]}
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) {
+          onClick();
+        }
+      }}
       onContextMenu={(e) => {
         e.stopPropagation();
         if (onContextMenu) {

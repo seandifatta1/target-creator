@@ -265,7 +265,44 @@ const InfiniteGridScene: React.FC<InfiniteGridSceneProps> = ({
         infiniteGrid={true}
       />
 
-      {/* Grid points */}
+      {/* Render paths FIRST so grid points are on top and receive clicks */}
+      {/* Render paths as thick white lines connecting lit tiles */}
+      {/* Disable path interaction during path creation mode so clicks reach grid points */}
+      {placedPaths.map((path) => {
+        const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
+        const isRelated = relatedItemIds.paths.includes(path.id);
+        
+        return (
+          <PathRenderer
+            key={path.id}
+            path={path as PathData}
+            isSelected={isSelected}
+            isRelated={isRelated}
+            disableInteraction={pathCreationMode?.isActive === true}
+            onSelect={() => {
+              onSelectItem({
+                type: 'path',
+                id: path.id,
+                pathType: path.pathType,
+                label: path.pathLabel,
+                name: path.name,
+                points: path.litTiles || []
+              });
+            }}
+            onContextMenu={() => {
+              onOpenNamingModal({
+                isOpen: true,
+                itemType: 'path',
+                itemId: path.id,
+                currentName: path.name,
+                itemLabel: path.pathLabel
+              });
+            }}
+          />
+        );
+      })}
+
+      {/* Grid points - rendered AFTER paths so they're on top and receive clicks */}
       {generateGridPoints(gridSize).map((position, index) => {
         // Check if this grid point is lit up by any path
         const isLitByPath = placedPaths.some(path => 
@@ -283,18 +320,22 @@ const InfiniteGridScene: React.FC<InfiniteGridSceneProps> = ({
           : false;
         
         // Calculate valid endpoints if in path creation mode
-        const validEndpoints = pathCreationMode?.isActive && pathCreationMode.type === 'line' && pathCreationMode.startPosition
-          ? getValidLineEndpoints(pathCreationMode.startPosition, gridSize)
+        // Round start position to ensure integer comparison (it should already be rounded, but be safe)
+        const roundedStartPosForEndpoints = pathCreationMode?.startPosition
+          ? [
+              Math.round(pathCreationMode.startPosition[0]),
+              Math.round(pathCreationMode.startPosition[1]),
+              Math.round(pathCreationMode.startPosition[2])
+            ] as Position3D
+          : null;
+        const validEndpoints = pathCreationMode?.isActive && pathCreationMode.type === 'line' && roundedStartPosForEndpoints
+          ? getValidLineEndpoints(roundedStartPosForEndpoints, gridSize)
           : [];
         
-        // Check if this is a valid endpoint (round position for comparison)
-        const roundedPosition: Position3D = [
-          Math.round(position[0]),
-          Math.round(position[1]),
-          Math.round(position[2])
-        ];
-        const isValidEndpoint = validEndpoints.some(ep => 
-          ep[0] === roundedPosition[0] && ep[1] === roundedPosition[1] && ep[2] === roundedPosition[2]
+        // Check if this is a valid endpoint
+        // Position is already an integer from generateGridPoints, but round to be safe
+        const isValidEndpoint = validEndpoints.length > 0 && validEndpoints.some(ep => 
+          ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
         );
         
         return (
@@ -324,40 +365,6 @@ const InfiniteGridScene: React.FC<InfiniteGridSceneProps> = ({
           <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
         </Sphere>
       )}
-
-      {/* Render paths as thick white lines connecting lit tiles */}
-      {placedPaths.map((path) => {
-        const isSelected = selectedItem?.type === 'path' && selectedItem.id === path.id;
-        const isRelated = relatedItemIds.paths.includes(path.id);
-        
-        return (
-          <PathRenderer
-            key={path.id}
-            path={path as PathData}
-            isSelected={isSelected}
-            isRelated={isRelated}
-            onSelect={() => {
-              onSelectItem({
-                type: 'path',
-                id: path.id,
-                pathType: path.pathType,
-                label: path.pathLabel,
-                name: path.name,
-                points: path.litTiles || []
-              });
-            }}
-            onContextMenu={() => {
-              onOpenNamingModal({
-                isOpen: true,
-                itemType: 'path',
-                itemId: path.id,
-                currentName: path.name,
-                itemLabel: path.pathLabel
-              });
-            }}
-          />
-        );
-      })}
 
       {/* Placed objects */}
       {placedObjects.map((obj) => {

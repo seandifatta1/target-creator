@@ -17,6 +17,7 @@ export interface PathRendererProps {
   isRelated: boolean;
   onSelect: () => void;
   onContextMenu: () => void;
+  disableInteraction?: boolean; // When true, clicks pass through to grid points underneath
 }
 
 /**
@@ -33,6 +34,7 @@ export const PathRenderer: React.FC<PathRendererProps> = ({
   isRelated,
   onSelect,
   onContextMenu,
+  disableInteraction = false,
 }) => {
   // Validate path has lit tiles
   if (!path || !path.litTiles || !Array.isArray(path.litTiles) || path.litTiles.length === 0) {
@@ -65,19 +67,19 @@ export const PathRenderer: React.FC<PathRendererProps> = ({
         key={path.id}
         position={[tile[0], tile[1] + 0.5, tile[2]]}
         args={[isRelated ? 0.45 : 0.4, 16, 16]}
-        onClick={(e) => {
+        onClick={disableInteraction ? undefined : (e) => {
           e.stopPropagation();
           onSelect();
         }}
-        onContextMenu={(e) => {
+        onContextMenu={disableInteraction ? undefined : (e) => {
           e.stopPropagation();
           onContextMenu();
         }}
-        onPointerOver={(e) => {
+        onPointerOver={disableInteraction ? undefined : (e) => {
           e.stopPropagation();
           document.body.style.cursor = 'pointer';
         }}
-        onPointerOut={(e) => {
+        onPointerOut={disableInteraction ? undefined : (e) => {
           e.stopPropagation();
           document.body.style.cursor = 'auto';
         }}
@@ -199,31 +201,35 @@ export const PathRenderer: React.FC<PathRendererProps> = ({
     // Create clickable box for this segment (using same midpoint, but offset Y by 0.5)
     const clickableMidpoint = new THREE.Vector3(midpoint.x, midpoint.y + 0.5, midpoint.z);
 
-    clickableBoxes.push(
-      <Box
-        key={`box-${path.id}-${i}`}
-        position={[clickableMidpoint.x, clickableMidpoint.y, clickableMidpoint.z]}
-        args={[Math.max(segmentLength, 0.8), 0.8, 0.8]}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect();
-        }}
-        onContextMenu={(e) => {
-          e.stopPropagation();
-          onContextMenu();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'auto';
-        }}
-      >
-        <meshStandardMaterial transparent opacity={0} />
-      </Box>
-    );
+    // Only create clickable boxes if interaction is enabled
+    // During path creation mode, we want clicks to pass through to grid points
+    if (!disableInteraction) {
+      clickableBoxes.push(
+        <Box
+          key={`box-${path.id}-${i}`}
+          position={[clickableMidpoint.x, clickableMidpoint.y, clickableMidpoint.z]}
+          args={[Math.max(segmentLength, 0.8), 0.8, 0.8]}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+          onContextMenu={(e) => {
+            e.stopPropagation();
+            onContextMenu();
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'auto';
+          }}
+        >
+          <meshStandardMaterial transparent opacity={0} />
+        </Box>
+      );
+    }
   }
 
   // Only render if we have valid lines

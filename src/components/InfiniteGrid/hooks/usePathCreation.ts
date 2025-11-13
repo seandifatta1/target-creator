@@ -114,10 +114,16 @@ export function usePathCreation(
 
   const startPathCreation = useCallback(
     (position: Position3D, pathType: string, pathLabel: string, pathName?: string) => {
+      // Round position to integers to ensure proper comparison with grid points
+      const roundedPosition: Position3D = [
+        Math.round(position[0]),
+        Math.round(position[1]),
+        Math.round(position[2])
+      ];
       setPathCreationMode({
         isActive: true,
         type: pathType === 'path-line' ? 'line' : 'curve',
-        startPosition: position,
+        startPosition: roundedPosition,
         pathType: pathType,
         pathLabel: pathLabel,
         pathName: pathName,

@@ -7,13 +7,25 @@ export type Position3D = [number, number, number];
 
 /**
  * Check if two 3D positions are equal
+ * Rounds positions to integers before comparison to handle floating point precision issues
  */
 export function positionsEqual(
   pos1: Position3D,
   pos2: Position3D | null
 ): boolean {
   if (!pos2) return false;
-  return pos1[0] === pos2[0] && pos1[1] === pos2[1] && pos1[2] === pos2[2];
+  // Round both positions to integers for comparison (grid points are integers)
+  const roundedPos1: Position3D = [
+    Math.round(pos1[0]),
+    Math.round(pos1[1]),
+    Math.round(pos1[2])
+  ];
+  const roundedPos2: Position3D = [
+    Math.round(pos2[0]),
+    Math.round(pos2[1]),
+    Math.round(pos2[2])
+  ];
+  return roundedPos1[0] === roundedPos2[0] && roundedPos1[1] === roundedPos2[1] && roundedPos1[2] === roundedPos2[2];
 }
 
 /**
@@ -49,6 +61,12 @@ export function getValidLineEndpoints(
   
   const validPoints: Position3D[] = [];
   const gridHalf = gridSize / 2;
+  
+  // Validate that start position is within grid bounds
+  if (startX < -gridHalf || startX > gridHalf || startZ < -gridHalf || startZ > gridHalf) {
+    console.warn('Start position is outside grid bounds:', { startX, startZ, gridHalf });
+    return [];
+  }
   
   // Generate all points in the grid
   for (let x = -gridHalf; x <= gridHalf; x++) {
