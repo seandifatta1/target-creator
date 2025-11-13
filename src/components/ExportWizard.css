@@ -1,23 +1,91 @@
-.export-wizard-dialog {
+/* Blueprint Dialog customizations to match existing style */
+/* Use highest specificity to override Blueprint defaults */
+.export-wizard-dialog.bp3-dialog,
+.export-wizard-dialog.bp6-dialog,
+.bp3-dialog.export-wizard-dialog,
+.bp6-dialog.export-wizard-dialog {
+  background: rgba(0, 0, 0, 0.85) !important;
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  background-image: none !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(155, 89, 182, 0.1) !important;
+  border-radius: 12px !important;
   min-width: 600px;
   max-width: 800px;
 }
 
+.export-wizard-dialog .bp3-overlay-backdrop,
+.export-wizard-dialog .bp6-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.export-wizard-dialog .bp3-dialog-header,
+.export-wizard-dialog .bp6-dialog-header,
+.export-wizard-dialog.bp3-dialog .bp3-dialog-header,
+.export-wizard-dialog.bp6-dialog .bp6-dialog-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.2) !important;
+  padding: 20px 24px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.export-wizard-dialog .bp3-dialog-header .bp3-heading,
+.export-wizard-dialog .bp6-dialog-header .bp6-heading,
+.export-wizard-dialog .bp3-heading,
+.export-wizard-dialog .bp6-heading {
+  color: #9b59b6 !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.export-wizard-dialog .bp3-dialog-header .bp3-icon,
+.export-wizard-dialog .bp6-dialog-header .bp6-icon,
+.export-wizard-dialog .bp3-icon,
+.export-wizard-dialog .bp6-icon {
+  color: #9b59b6 !important;
+}
+
+.export-wizard-dialog .bp3-dialog-body,
+.export-wizard-dialog .bp6-dialog-body {
+  padding: 24px !important;
+  color: #e2e8f0 !important;
+  background: transparent !important;
+}
+
 .export-wizard-content {
-  padding: 20px;
+  padding: 0;
 }
 
 .export-wizard-breadcrumbs {
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
-.export-wizard-breadcrumbs .bp3-breadcrumb.active {
-  color: #9b59b6;
-  font-weight: 600;
+.export-wizard-breadcrumbs .bp3-breadcrumb,
+.export-wizard-breadcrumbs .bp6-breadcrumb {
+  color: #94a3b8 !important;
 }
 
-.export-wizard-breadcrumbs .bp3-breadcrumb.completed {
-  color: #888;
+.export-wizard-breadcrumbs .bp3-breadcrumb.active,
+.export-wizard-breadcrumbs .bp6-breadcrumb.active {
+  color: #9b59b6 !important;
+  font-weight: 600 !important;
+}
+
+.export-wizard-breadcrumbs .bp3-breadcrumb.completed,
+.export-wizard-breadcrumbs .bp6-breadcrumb.completed {
+  color: #94a3b8 !important;
+}
+
+.export-wizard-breadcrumbs .bp3-breadcrumb:hover,
+.export-wizard-breadcrumbs .bp6-breadcrumb:hover {
+  color: #9b59b6 !important;
 }
 
 .export-step-content {
@@ -26,19 +94,23 @@
 }
 
 .export-step-content h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #fff;
+  margin-top: 0 !important;
+  margin-bottom: 20px !important;
+  color: #9b59b6 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
 }
 
 .export-option-group {
   margin-bottom: 20px;
 }
 
-.export-option-group .bp3-label {
-  margin-bottom: 10px;
-  color: #a8c7e8;
-  font-weight: 600;
+.export-option-group .bp3-label,
+.export-option-group .bp6-label {
+  margin-bottom: 10px !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
 }
 
 .export-preview {
@@ -46,62 +118,79 @@
 }
 
 .preview-summary {
-  background: rgba(155, 89, 182, 0.1);
-  border: 1px solid rgba(155, 89, 182, 0.3);
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 20px;
+  background: rgba(155, 89, 182, 0.1) !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
 }
 
 .preview-summary h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #9b59b6;
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
+  color: #9b59b6 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
 }
 
 .preview-summary ul {
-  margin: 0;
-  padding-left: 20px;
-  color: #fff;
+  margin: 0 !important;
+  padding-left: 20px !important;
+  color: #e2e8f0 !important;
 }
 
 .preview-summary li {
-  margin: 5px 0;
+  margin: 6px 0 !important;
+  color: #e2e8f0 !important;
 }
 
 .preview-warning {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 15px;
-  background: rgba(255, 193, 7, 0.1);
-  border: 1px solid rgba(255, 193, 7, 0.3);
-  border-radius: 6px;
-  color: #ffc107;
-  margin-bottom: 20px;
+  padding: 16px !important;
+  background: rgba(243, 156, 18, 0.1) !important;
+  border: 1px solid rgba(243, 156, 18, 0.3) !important;
+  border-radius: 8px !important;
+  color: #f39c12 !important;
+  margin-bottom: 20px !important;
+}
+
+.preview-warning .bp3-icon,
+.preview-warning .bp6-icon {
+  color: #f39c12 !important;
 }
 
 .preview-code {
   margin-top: 20px;
 }
 
+.preview-code .bp3-label,
+.preview-code .bp6-label {
+  color: #94a3b8 !important;
+  margin-bottom: 10px !important;
+}
+
 .preview-code pre {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 15px;
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  border-radius: 6px !important;
+  padding: 16px !important;
   overflow-x: auto;
-  font-size: 12px;
-  color: #fff;
+  font-size: 13px !important;
+  font-family: 'Courier New', monospace !important;
+  color: #e2e8f0 !important;
   max-height: 200px;
   overflow-y: auto;
+  margin: 0 !important;
 }
 
 .export-summary {
-  padding: 15px;
-  background: rgba(155, 89, 182, 0.05);
-  border-radius: 6px;
-  color: #fff;
+  padding: 16px !important;
+  background: rgba(155, 89, 182, 0.1) !important;
+  border: 1px solid rgba(155, 89, 182, 0.2) !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
   text-align: center;
 }
 
@@ -110,5 +199,99 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
+}
+
+/* Input and select styling */
+.export-wizard-dialog .bp3-input,
+.export-wizard-dialog .bp6-input,
+.export-wizard-dialog .bp3-select,
+.export-wizard-dialog .bp6-select {
+  background: rgba(0, 0, 0, 0.6) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  background-image: none !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+.export-wizard-dialog .bp3-input:focus,
+.export-wizard-dialog .bp6-input:focus,
+.export-wizard-dialog .bp3-select:focus,
+.export-wizard-dialog .bp6-select:focus {
+  border-color: #9b59b6 !important;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2) !important;
+}
+
+/* Checkbox and radio styling */
+.export-wizard-dialog .bp3-checkbox,
+.export-wizard-dialog .bp6-checkbox,
+.export-wizard-dialog .bp3-radio,
+.export-wizard-dialog .bp6-radio {
+  color: #e2e8f0 !important;
+}
+
+.export-wizard-dialog .bp3-checkbox .bp3-control-indicator,
+.export-wizard-dialog .bp6-checkbox .bp6-control-indicator {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+}
+
+.export-wizard-dialog .bp3-checkbox input:checked ~ .bp3-control-indicator,
+.export-wizard-dialog .bp6-checkbox input:checked ~ .bp6-control-indicator {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+.export-wizard-dialog .bp3-radio .bp3-control-indicator,
+.export-wizard-dialog .bp6-radio .bp6-control-indicator {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 89, 182, 0.3) !important;
+}
+
+.export-wizard-dialog .bp3-radio input:checked ~ .bp3-control-indicator,
+.export-wizard-dialog .bp6-radio input:checked ~ .bp6-control-indicator {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+/* Divider styling */
+.export-wizard-dialog .bp3-divider,
+.export-wizard-dialog .bp6-divider {
+  border-color: rgba(155, 89, 182, 0.2) !important;
+}
+
+/* Button styling */
+.export-wizard-dialog .bp3-button,
+.export-wizard-dialog .bp6-button {
+  color: #e2e8f0 !important;
+}
+
+.export-wizard-dialog .bp3-button.bp3-intent-primary,
+.export-wizard-dialog .bp6-button.bp6-intent-primary {
+  background: #9b59b6 !important;
+  border-color: #9b59b6 !important;
+}
+
+.export-wizard-dialog .bp3-button.bp3-intent-primary:hover,
+.export-wizard-dialog .bp6-button.bp6-intent-primary:hover {
+  background: #8e44ad !important;
+  border-color: #8e44ad !important;
+}
+
+.export-wizard-dialog .bp3-button:disabled,
+.export-wizard-dialog .bp6-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Progress bar styling */
+.export-wizard-dialog .bp3-progress-bar,
+.export-wizard-dialog .bp6-progress-bar {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.export-wizard-dialog .bp3-progress-bar .bp3-progress-meter,
+.export-wizard-dialog .bp6-progress-bar .bp6-progress-meter {
+  background: #9b59b6 !important;
 }
 
