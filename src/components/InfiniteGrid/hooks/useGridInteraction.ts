@@ -135,11 +135,23 @@ export function useGridInteraction(
       if (pathCreationMode?.isActive && pathCreationMode.startPosition) {
         const startPos = pathCreationMode.startPosition;
 
+        // Round positions to integers for comparison (grid points are integers)
+        const roundedStartPos: Position3D = [
+          Math.round(startPos[0]),
+          Math.round(startPos[1]),
+          Math.round(startPos[2])
+        ];
+        const roundedPosition: Position3D = [
+          Math.round(position[0]),
+          Math.round(position[1]),
+          Math.round(position[2])
+        ];
+
         // Don't allow selecting the start position as endpoint
         if (
-          position[0] === startPos[0] &&
-          position[1] === startPos[1] &&
-          position[2] === startPos[2]
+          roundedPosition[0] === roundedStartPos[0] &&
+          roundedPosition[1] === roundedStartPos[1] &&
+          roundedPosition[2] === roundedStartPos[2]
         ) {
           if (onPathCreationError) {
             onPathCreationError('Cannot select the start point as the endpoint');
@@ -149,17 +161,19 @@ export function useGridInteraction(
 
         if (pathCreationMode.type === 'line') {
           // Check if the clicked point is a valid endpoint
-          const validEndpoints = getValidLineEndpoints(startPos, gridSize);
+          const validEndpoints = getValidLineEndpoints(roundedStartPos, gridSize);
           const isValidEndpoint = validEndpoints.some(
             (ep) =>
-              ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
+              ep[0] === roundedPosition[0] && 
+              ep[1] === roundedPosition[1] && 
+              ep[2] === roundedPosition[2]
           );
 
           if (isValidEndpoint && onPathCreationComplete) {
-            // Complete the path creation
+            // Complete the path creation (use rounded positions)
             onPathCreationComplete(
-              startPos,
-              position,
+              roundedStartPos,
+              roundedPosition,
               pathCreationMode.pathType,
               pathCreationMode.pathLabel
             );
@@ -174,12 +188,18 @@ export function useGridInteraction(
       }
 
       // Check if this grid point is lit by a path - if so, select that path
+      // Round position for comparison (grid points are integers)
+      const roundedPosition: Position3D = [
+        Math.round(position[0]),
+        Math.round(position[1]),
+        Math.round(position[2])
+      ];
       const pathWithThisTile = placedPaths.find(
         (path) =>
           path.litTiles &&
           path.litTiles.some(
             (tile) =>
-              tile[0] === position[0] && tile[1] === position[1] && tile[2] === position[2]
+              tile[0] === roundedPosition[0] && tile[1] === roundedPosition[1] && tile[2] === roundedPosition[2]
           )
       );
 

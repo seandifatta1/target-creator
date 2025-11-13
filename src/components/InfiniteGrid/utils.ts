@@ -57,11 +57,23 @@ export function validatePathEndpoint(
   endPos: Position3D,
   gridSize: number
 ): { isValid: boolean; error?: string } {
+  // Round positions to integers for comparison (grid points are integers)
+  const roundedStartPos: Position3D = [
+    Math.round(startPos[0]),
+    Math.round(startPos[1]),
+    Math.round(startPos[2])
+  ];
+  const roundedEndPos: Position3D = [
+    Math.round(endPos[0]),
+    Math.round(endPos[1]),
+    Math.round(endPos[2])
+  ];
+
   // Don't allow selecting the start position as endpoint
   if (
-    startPos[0] === endPos[0] &&
-    startPos[1] === endPos[1] &&
-    startPos[2] === endPos[2]
+    roundedStartPos[0] === roundedEndPos[0] &&
+    roundedStartPos[1] === roundedEndPos[1] &&
+    roundedStartPos[2] === roundedEndPos[2]
   ) {
     return {
       isValid: false,
@@ -70,10 +82,10 @@ export function validatePathEndpoint(
   }
 
   // Check if the clicked point is a valid endpoint
-  const validEndpoints = getValidLineEndpoints(startPos, gridSize);
+  const validEndpoints = getValidLineEndpoints(roundedStartPos, gridSize);
   const isValid = validEndpoints.some(
     (ep) =>
-      ep[0] === endPos[0] && ep[1] === endPos[1] && ep[2] === endPos[2]
+      ep[0] === roundedEndPos[0] && ep[1] === roundedEndPos[1] && ep[2] === roundedEndPos[2]
   );
 
   if (!isValid) {

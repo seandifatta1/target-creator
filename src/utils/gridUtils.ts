@@ -42,7 +42,11 @@ export function getValidLineEndpoints(
   startPos: Position3D,
   gridSize: number
 ): Position3D[] {
-  const [startX, startY, startZ] = startPos;
+  // Round start position to integers to ensure proper comparison with grid points
+  const startX = Math.round(startPos[0]);
+  const startY = Math.round(startPos[1]);
+  const startZ = Math.round(startPos[2]);
+  
   const validPoints: Position3D[] = [];
   const gridHalf = gridSize / 2;
   

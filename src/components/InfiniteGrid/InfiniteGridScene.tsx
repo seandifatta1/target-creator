@@ -287,9 +287,14 @@ const InfiniteGridScene: React.FC<InfiniteGridSceneProps> = ({
           ? getValidLineEndpoints(pathCreationMode.startPosition, gridSize)
           : [];
         
-        // Check if this is a valid endpoint
+        // Check if this is a valid endpoint (round position for comparison)
+        const roundedPosition: Position3D = [
+          Math.round(position[0]),
+          Math.round(position[1]),
+          Math.round(position[2])
+        ];
         const isValidEndpoint = validEndpoints.some(ep => 
-          ep[0] === position[0] && ep[1] === position[1] && ep[2] === position[2]
+          ep[0] === roundedPosition[0] && ep[1] === roundedPosition[1] && ep[2] === roundedPosition[2]
         );
         
         return (
